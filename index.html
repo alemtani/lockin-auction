@@ -54,6 +54,10 @@ tr.sold td{opacity:.4}
 textarea{width:100%;min-height:120px;font-size:12px}
 .pass{color:var(--bid);font-weight:700}.fail{color:var(--stop);font-weight:700}
 #toast{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px;border-radius:10px;display:none;z-index:20}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+summary{font-weight:700;cursor:pointer;min-height:28px}
+details ol,details ul{padding-left:20px;margin:6px 0}
+details li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -86,6 +90,7 @@ textarea{width:100%;min-height:120px;font-size:12px}
 <section id="v-sales" hidden></section>
 <section id="v-log" hidden></section>
 <section id="v-more" hidden></section>
+<section id="v-help" hidden></section>
 <div id="toast"></div>
 <script>
 'use strict';
@@ -493,6 +498,50 @@ function renderSales() {
   if (editPid) { $('ed-ok').onclick = () => { recordSale(editPid, $('ed-t').value, $('ed-amt').value); editPid = null; render(); }; $('ed-x').onclick = () => { editPid = null; renderSales(); }; }
 }
 function renderLog() { $('v-log').innerHTML = S.log.map(l => `<div class="small" style="border-bottom:1px solid var(--line);padding:4px 0">${esc(l)}</div>`).join('') || '<p class="mut">Empty.</p>'; }
+function renderHelp() {
+  recompute();
+  const nom = nominator(slots(), S.sales);
+  $('v-help').innerHTML = `<div class="card small">You are <b>slot ${S.meSlot}</b> · next nominator (estimate): <b>${esc(tname(nom))}</b> · draft starts Sun 2026-10-18 17:00 PDT</div>
+<details open><summary>Before the draft</summary><ol>
+<li>Badges show <b>live · 0 sold</b> and <b>me $165/14 · max $152</b>. If you see <b>OFFLINE</b>, reload when you have signal.</li>
+<li>Teams tab: you are slot 10, shown as "Me". If not, fix it with the slot picker there.</li>
+<li>If you tested on this phone, clear it: ⋯ → Reset.</li>
+<li>Charge the phone. The page checks Sleeper every 5 s.</li></ol></details>
+<details open><summary>Slot 10: what it means</summary><ul>
+<li>You nominate <b>last in each round</b>: the 10th, 20th, 30th… player.</li>
+<li>9 players sell before your first nomination. The stars likely go first; you can still bid on them.</li>
+<li>Your first maxes already use real prices from 9 sales.</li>
+<li>When "next nominator" is slot 9, open <b>Nominate</b> and choose. You get 60 s, and Sleeper probably auto-nominates if you run out.</li>
+<li>The nominator is an estimate. If it differs from Sleeper in round 1, trust Sleeper.</li></ul></details>
+<details open><summary>Each player on the block</summary><ol>
+<li>Type 2+ letters and tap the player. The card shows <b>OPEN AT $X</b> and your max.</li>
+<li>Someone bids: set $ (+1, +5, or type), then tap their team chip. Two taps.</li>
+<li><b>BID $Y</b>: bid $Y in Sleeper, then tap <b>I bid $Y</b>. The card says HOLD.<br><b>HOLD</b>: you're winning. Do nothing.<br><b>STOP</b>: the price passed your max. Let him go.</li>
+<li>"<b>only you can go above $X</b>": bid $X+1 and you win outright.<br>"<b>Team N is tapped out at $M</b>": that team can't raise.</li>
+<li>No need to log every bid. Update when it's your turn to act. The gray line turns orange after 20 s.</li></ol>
+<p class="small"><b>The number that matters is "your max".</b> It changes only after a sale. If switching apps is too slow: read your max, then bid +$1 in Sleeper up to it.</p></details>
+<details><summary>When a player sells</summary><ul>
+<li>Normal: Sleeper's sale arrives within ~5 s. The card clears and the numbers update. Do nothing.</li>
+<li>Badge says <b>STALE</b> or <b>OFFLINE</b>: tap <b>SOLD</b> after each sale. If Sleeper reports it later, Sleeper wins and nothing counts twice.</li>
+<li>"$?" means Sleeper sent no price. Enter it in Sales.</li>
+<li>Mistake: Sales → Edit, or Delete (tap twice).</li></ul></details>
+<details><summary>Your nominations</summary><ul>
+<li><b>Early rounds: "Drain the room"</b> players. The room values them above your numbers, so others spend money. The opening bid is never above your max, so winning one is OK.</li>
+<li><b>Mid and late rounds: "Targets".</b> Worth more to you than the market thinks. Open at $1, or above every opponent's max when only you can pay.</li>
+<li>Tap a card to load it into the bid card.</li></ul></details>
+<details><summary>Late in the draft</summary><ul>
+<li>Watch the <b>me $X/N</b> badge. Aim to finish near $0.</li>
+<li>Money left over: your maxes rise on their own. Trust the higher numbers.</li>
+<li>Below $4 per open spot: +$1–3 bonus for Out players (your IR takes Out only), high-variance players, and rookies. The reason line names it.</li>
+<li>Roster full: every card says STOP · no roster slot.</li></ul></details>
+<details><summary>Safety</summary><ul>
+<li>Switching to Sleeper and back is fine. The page checks Sleeper again as soon as you return.</li>
+<li>A few times during the draft: ⋯ → Export → Copy, then paste into Notes. You need this only if the phone dies.</li></ul></details>
+<details><summary>Words on the screen</summary><ul>
+<li><b>$</b>: your value. <b>Mkt</b>: value at Sleeper ADP. <b>Edge</b>: $ − Mkt.</li>
+<li><b>Max</b> (Board): the most you should pay right now. <b>Max</b> (team chip, Teams): the most that team can bid and still fill its roster at $1 each.</li>
+<li><b>Inflation</b>: league money left to spend ÷ value left. Above 1.00 means prices run high.</li></ul></details>`;
+}
 function renderMore() {
   $('v-more').innerHTML = `<div class="card"><b>Export</b><p class="small mut">Copy this text to move or back up the draft.</p><textarea id="exp" readonly>${esc(JSON.stringify(S))}</textarea><button id="cp">Copy</button></div>
   <div class="card"><b>Import</b><textarea id="imp" placeholder="Paste exported text"></textarea><button id="im">Import (replaces current state)</button></div>
@@ -505,7 +554,7 @@ function renderMore() {
 
 function render() {
   renderCard();
-  ({board: renderBoard, nom: renderNom, teams: renderTeams, sales: renderSales, log: renderLog, more: renderMore})[cur]();
+  ({board: renderBoard, nom: renderNom, teams: renderTeams, sales: renderSales, log: renderLog, more: renderMore, help: renderHelp})[cur]();
 }
 
 // ---------- autocomplete ----------
@@ -524,7 +573,7 @@ function wireAC(input, box, onPick) {
 
 // ---------- wiring ----------
 function wire() {
-  const tabs = [['board', 'Board'], ['nom', 'Nominate'], ['teams', 'Teams'], ['sales', 'Sales'], ['log', 'Log'], ['more', '⋯']];
+  const tabs = [['board', 'Board'], ['nom', 'Nominate'], ['teams', 'Teams'], ['sales', 'Sales'], ['log', 'Log'], ['help', 'Guide'], ['more', '⋯']];
   $('nav').innerHTML = tabs.map(([k, l]) => `<button data-v="${k}" class="${k === cur ? 'on' : ''}">${l}</button>`).join('');
   $('nav').querySelectorAll('button').forEach(b => b.onclick = () => {
     cur = b.dataset.v; $('nav').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
