@@ -1,0 +1,201 @@
+rank|name|pos|team|fpg|last_fpg|last_gp|sigma|proj_gp|weekly|adp_rank|flags
+1|Nikola Jokić|C|DEN|55.0|55.6|65|18.1|61|63.7|2|
+2|Giannis Antetokounmpo|PF|MIA|49.5|45.9|36|17.0|70|59.7|7|Sleeper status: DTD
+3|Luka Dončić|PG|LAL|48.6|50.1|64|19.2|59|57.3|3|Sleeper status: GTD
+4|Shai Gilgeous-Alexander|PG|OKC|50.2|50.9|68|15.4|60|57.3|4|
+5|Victor Wembanyama|C|SAS|44.8|42.6|64|18.4|63|54.3|1|
+6|Jalen Johnson|PF/SF|ATL|39.1|37.8|72|16.7|60|46.9|14|
+7|Devin Booker|PG/SG|PHX|38.4|34.8|64|15.6|63|46.4|18|Sleeper status: GTD
+8|Cade Cunningham|PG|DET|38.3|38.3|64|16.2|61|46.0|5|
+9|Cooper Flagg|PG/SF/SG|DAL|36.1|30.8|70|20.2|61|45.9|16|
+10|Donovan Mitchell|PG/SG|CLE|38.7|39.7|70|15.8|59|45.9|12|
+11|Jayson Tatum|PF/SF|BOS|37.9|31.8|16|15.1|63|45.6|11|Sleeper status: DTD
+12|Austin Reaves|PG/SG|LAL|36.8|35.3|51|18.0|61|45.6|33|
+13|Anthony Davis|C/PF|WAS|36.4|32.9|20|17.5|62|45.2|15|
+14|Anthony Edwards|PG/SG|MIN|37.4|38.8|61|16.3|60|45.0|6|Sleeper status: DTD
+15|Domantas Sabonis|C/PF|SAC|36.1|27.6|19|15.8|67|45.0|27|
+16|Jamal Murray|PG|DEN|37.5|39.5|75|15.7|59|44.7|30|
+17|Kawhi Leonard|SF/SG|TOR|37.7|42.6|65|14.7|60|44.5|43|Sleeper status: DTD
+18|Stephen Curry|PG|GSW|35.6|36.6|43|16.8|63|44.3|24|
+19|Tyrese Maxey|PG|PHI|38.2|42.0|70|14.2|57|44.1|8|
+20|Trae Young|PG|WAS|34.4|29.4|15|15.9|70|44.0|21|role change: GP guessed
+21|Kyrie Irving|PG/SG|DAL|34.0||0|15.1|70|43.0|110|no 25-26 games: GP guessed
+22|Jalen Brunson|PG|NYK|36.0|36.0|74|14.8|59|42.8|22|
+23|Tyrese Haliburton|PG/SG|IND|33.7||0|15.0|70|42.7|17|no 25-26 games: GP guessed
+24|Zion Williamson|PF/SF|NOP|36.0|33.3|62|13.9|60|42.6|50|
+25|Tyler Herro|PG/SG|MIL|34.1|28.3|33|15.6|65|42.5|57|
+26|Paolo Banchero|PF|ORL|34.8|32.2|72|15.8|60|42.3|28|
+27|Kevin Durant|PF/SF|HOU|35.7|37.3|78|14.4|59|42.3|26|
+28|Joel Embiid|C|PHI|36.1|39.1|38|14.2|57|42.1|56|
+29|Jalen Duren|C|DET|33.8|35.1|70|15.2|62|41.3|48|
+30|Franz Wagner|PF/SF|ORL|33.4|29.5|34|14.4|64|41.1|34|
+31|Darius Garland|PG|LAC|31.9|26.5|45|15.8|67|40.9|55|
+32|LaMelo Ball|PG|MIN|31.4|28.4|72|15.9|69|40.7|32|Sleeper status: DTD
+33|Alperen Şengün|C/PF|HOU|33.2|34.0|72|16.0|58|40.4|10|
+34|Damian Lillard|PG|POR|31.6||0|14.6|70|40.3|147|no 25-26 games: GP guessed
+35|Coby White|PG/SG|CHA|30.4|21.9|50|16.1|70|40.0|81|role change: GP guessed; Sleeper status: DTD
+36|Lauri Markkanen|PF/SF|UTA|34.1|38.0|42|12.9|59|40.0|51|
+37|Deni Avdija|PF/SF/SG|POR|33.4|35.9|66|14.0|59|39.8|37|
+38|Josh Giddey|PG|CHI|31.8|31.1|54|15.6|61|39.3|38|
+39|Keyonte George|PG/SG|UTA|31.9|33.9|54|15.6|60|39.3|79|
+40|Karl-Anthony Towns|C/PF|NYK|31.7|32.4|75|14.3|62|38.8|9|
+41|Bam Adebayo|C/PF|MIA|30.7|31.5|73|16.0|61|38.6|35|Sleeper status: DTD
+42|Pascal Siakam|C/PF|IND|32.3|32.1|62|13.3|60|38.6|46|
+43|Brandon Miller|PF/SF/SG|CHA|29.6|25.6|65|15.8|65|38.2|45|
+44|Jalen Williams|PF/SF/SG|OKC|31.3|27.1|33|12.4|66|38.2|23|
+45|Jaylen Brown|PF/SF/SG|PHI|32.0|36.7|71|13.6|58|38.1|31|
+46|Trey Murphy|SF/SG|NOP|31.0|32.1|66|14.8|59|37.9|39|
+47|Amen Thompson|PG/SF/SG|HOU|32.4|33.3|79|12.7|58|37.9|20|
+48|Michael Porter|PF/SF|BKN|30.7|32.2|52|14.0|61|37.6|63|
+49|Scottie Barnes|PF/SF|TOR|31.1|32.1|80|13.8|60|37.6|13|Sleeper status: DTD
+50|Evan Mobley|C/PF|CLE|31.1|31.3|65|13.1|60|37.4|19|
+51|Stephon Castle|PG/SG|SAS|29.6|27.4|68|15.0|62|37.2|64|
+52|James Harden|PG|CLE|31.2|37.0|70|12.9|58|36.9|36|
+53|LeBron James|PF/PG/SF|PHI|31.1|34.5|60|13.1|58|36.8|54|
+54|Payton Pritchard|PG|BOS|29.0|26.4|79|15.8|61|36.8|83|Sleeper status: DTD
+55|Chet Holmgren|C/PF|OKC|30.3|29.5|69|13.2|60|36.6|29|Sleeper status: DTD
+56|Cameron Boozer|C/PF|MEM|28.2||0|13.9|70|36.6|25|no 25-26 games: GP guessed
+57|Ivica Zubac|C|IND|29.1|25.6|48|13.9|64|36.4|41|
+58|Kon Knueppel|SF/SG|CHA|28.8|26.5|81|15.1|61|36.2|70|Sleeper status: DTD
+59|Walker Kessler|C|LAL|28.3|31.0|5|15.5|60|35.7|58|
+60|Ty Jerome|PG/SG|MEM|27.9|30.4|15|12.4|71|35.5|177|
+61|Matas Buzelis|PF/SF|CHI|27.0|22.4|77|15.3|66|35.4|94|
+62|Julius Randle|C/PF|BKN|29.2|31.2|79|13.2|60|35.4|61|
+63|Dylan Harper|PG/SG|SAS|25.7|18.5|69|16.1|70|35.4|69|role change: GP guessed
+64|Cedric Coward|SF/SG|MEM|25.6|20.3|62|14.8|74|35.1|134|
+65|Zach LaVine|SF/SG|SAC|26.9|23.5|39|15.5|63|34.9|89|
+66|Desmond Bane|PG/SG|ORL|28.0|28.8|82|14.7|59|34.8|44|
+67|Jalen Green|SF/SG|PHX|23.8|19.6|32|16.3|74|34.2|90|Sleeper status: GTD
+68|Ryan Rollins|PG|MIL|27.0|25.8|74|14.6|60|33.9|133|
+69|Derrick White|PG/SG|BOS|27.5|26.2|77|13.7|59|33.9|49|Sleeper status: DTD
+70|De'Aaron Fox|PG|SAS|27.4|28.3|72|13.2|59|33.6|52|
+71|Brandon Ingram|PF/SF/SG|LAC|27.7|28.6|77|13.7|57|33.6|68|Sleeper status: Out
+72|Zach Edey|C|MEM|25.9|25.5|11|14.3|65|33.6|101|
+73|Dejounte Murray|PG/SG|NOP|26.2|25.7|14|13.5|65|33.5|113|Sleeper status: DTD
+74|Immanuel Quickley|PG/SG|TOR|26.9|27.1|70|13.7|60|33.4|82|Sleeper status: DTD
+75|Miles Bridges|PF|PHX|25.7|24.4|77|14.6|63|33.2|71|Sleeper status: GTD
+76|Jaime Jaquez|PF/SF/SG|MIL|26.5|23.7|75|14.3|59|33.2|128|
+77|Jarrett Allen|C|CLE|26.6|28.8|56|13.4|61|33.2|66|
+78|Onyeka Okongwu|C|ATL|26.4|24.8|74|13.2|61|33.0|72|
+79|Donovan Clingan|C|POR|26.0|26.6|77|13.0|64|32.8|92|
+80|Norman Powell|SF/SG|CHI|26.0|27.9|58|12.7|65|32.8|93|
+81|Nickeil Alexander-Walker|PG/SG|ATL|27.2|29.1|78|12.9|58|32.8|95|
+82|Aaron Gordon|C/PF|DEN|25.0|25.4|36|14.4|63|32.5|122|
+83|Jimmy Butler|PF/SF/SG|GSW|28.3|37.2|38|11.2|54|32.4|67|Sleeper status: Out
+84|Derik Queen|C/PF|NOP|23.7|19.6|81|15.9|65|32.3|112|
+85|Alex Sarr|C|WAS|24.5|25.7|48|13.9|66|32.3|62|
+86|Collin Sexton|PG/SG|LAL|24.2|21.4|68|12.6|73|32.2|169|Sleeper status: GTD
+87|Day'Ron Sharpe|C|BKN|22.9|18.0|62|15.4|70|32.1|222|role change: GP guessed
+88|Caleb Wilson|PF/SF|CHI|24.1||0|13.2|70|32.0|91|no 25-26 games: GP guessed
+89|Darryn Peterson|PG/SG|UTA|24.0||0|13.1|70|31.9|42|no 25-26 games: GP guessed
+90|CJ McCollum|PG/SG|ATL|25.1|25.0|76|13.8|60|31.8|105|
+91|Kel'el Ware|C/PF|MIL|23.0|21.4|77|14.6|70|31.8|76|
+92|OG Anunoby|PF/SF|NYK|24.5|25.1|67|14.8|60|31.6|59|
+93|Kristaps Porziņģis|C|GSW|25.0|24.4|32|13.6|60|31.5|88|Sleeper status: Out
+94|Rui Hachimura|PF/SF|LAC|24.5|15.6|68|13.2|64|31.4|174|big projected jump vs 25-26
+95|Nic Claxton|C/PF|CHI|24.4|23.2|69|13.0|63|31.2|103|Sleeper status: DTD
+96|Jaden McDaniels|PF/SF|MIN|23.7|21.8|73|15.2|61|31.2|77|Sleeper status: DTD
+97|Josh Hart|SF/SG|NYK|24.2|22.7|66|13.1|63|31.0|65|Sleeper status: DTD
+98|Egor Dëmin|PG/SG|BKN|20.9|14.5|52|15.9|74|31.0|180|
+99|AJ Dybantsa|PF/SF|WAS|23.1||0|13.0|70|30.9|53|no 25-26 games: GP guessed
+100|Jonathan Kuminga|PF|MIN|21.3|17.2|36|16.3|68|30.7|198|Sleeper status: DTD
+101|John Collins|C/PF|DET|23.4|20.1|69|13.3|64|30.5|114|
+102|Ja Morant|PG/SG|POR|23.4|26.8|20|13.3|63|30.3|47|
+103|Jaren Jackson|C/PF|UTA|24.7|24.6|48|11.5|61|30.3|40|
+104|Naz Reid|C/PF|CHA|22.0|19.4|77|14.7|67|30.3|75|
+105|Rudy Gobert|C|MIN|24.2|25.1|76|11.9|60|29.9|84|Sleeper status: DTD
+106|Ayo Dosunmu|PG/SG|MIN|22.6|23.0|69|12.3|68|29.7|131|Sleeper status: DTD
+107|Collin Murray-Boyles|C/PF|TOR|20.9|16.9|57|14.1|73|29.7|139|Sleeper status: DTD
+108|Isaiah Hartenstein|C|OKC|22.8|22.1|47|12.8|64|29.7|87|
+109|Darius Acuff|PG/SG|SAC|21.9||0|12.7|70|29.5|171|no 25-26 games: GP guessed
+110|Christian Braun|SF/SG|DEN|22.7|19.7|44|13.8|60|29.4|116|
+111|Khaman Maluach|C|PHX|21.6|5.6|46|12.7|70|29.2|186|role change: GP guessed; big projected jump vs 25-26
+112|Saddiq Bey|PF/SF|NOP|23.4|26.6|72|12.6|59|29.2|178|
+113|Ajay Mitchell|PG/SG|OKC|23.3|21.4|57|10.8|65|29.1|154|
+114|Brandin Podziemski|PG/SG|GSW|22.8|21.9|82|12.1|63|29.1|127|
+115|Andrew Wiggins|PF/SF/SG|MIA|22.9|23.7|68|12.2|62|29.0|108|
+116|DeMar DeRozan|PF/SF/SG|DEN|23.7|28.0|77|13.7|54|29.0|107|Sleeper status: GTD
+117|Mark Williams|C|PHX|22.7|23.2|60|12.7|61|29.0|124|Sleeper status: Out
+118|Quentin Grimes|SF/SG|LAL|21.5|19.2|75|13.5|66|28.9|155|
+119|VJ Edgecombe|PG/SG|PHI|22.6|24.1|75|12.9|60|28.7|78|Sleeper status: DTD
+120|Scoot Henderson|PG|POR|21.5|17.3|30|14.0|61|28.5|150|
+121|RJ Barrett|PF/SF/SG|TOR|23.5|26.3|57|10.7|60|28.5|100|Sleeper status: DTD
+122|Dyson Daniels|SF/SG|ATL|22.9|25.9|76|11.7|58|28.1|60|
+123|Ausar Thompson|SF/SG|DET|22.1|19.9|73|11.2|64|28.1|73|
+124|Fred VanVleet|PG|HOU|20.5||0|12.5|70|28.0|153|no 25-26 games: GP guessed
+125|Jerami Grant|PF/SF|MEM|21.4|23.7|57|12.8|61|27.8|166|Sleeper status: DTD
+126|Anthony Black|PG/SF/SG|ORL|21.4|21.1|64|15.0|56|27.8|164|Sleeper status: DTD
+127|Davion Mitchell|PG|MIA|21.0|18.4|70|11.8|67|27.7|228|
+128|Mikal Bridges|PF/SF/SG|NYK|22.1|24.0|82|11.6|60|27.7|74|
+129|Jakob Poeltl|C|TOR|20.5|21.2|46|13.1|65|27.6|118|Sleeper status: DTD
+130|Keegan Murray|PF/SF|SAC|21.1|19.6|23|13.7|59|27.6|102|
+131|Jalen Suggs|PG|ORL|21.5|22.0|57|12.2|60|27.4|98|
+132|Sandro Mamukelashvili|C/PF|LAL|20.0|19.1|80|11.9|71|27.3|200|
+133|Andrew Nembhard|PG/SG|IND|21.8|26.7|57|12.0|57|27.1|96|
+134|Tre Jones|PG/SF/SG|CHI|22.4|26.3|65|11.2|56|27.1|247|
+135|Yaxel Lendeborg|PF/SF|GSW|19.7||0|12.3|70|27.0|141|no 25-26 games: GP guessed
+136|Mikel Brown|PG/SG|BKN|19.6||0|12.3|70|27.0|140|no 25-26 games: GP guessed
+137|Gui Santos|PF/SF|GSW|17.8|14.7|68|15.2|70|27.0|256|
+138|Jeremiah Fears|PG|NOP|20.0|18.4|82|14.1|61|26.9|163|
+139|Dereck Lively|C|DAL|19.4|11.5|7|12.2|70|26.7|138|role change: GP guessed; big projected jump vs 25-26; Sleeper status: DTD
+140|Peyton Watson|PF/SF|CLE|20.8|21.0|54|14.2|55|26.7|146|
+141|Paul George|PF/SF/SG|BOS|21.2|25.4|37|12.3|56|26.4|86|Sleeper status: DTD
+142|De'Anthony Melton|PG/SG|GSW|18.5|16.2|49|14.3|65|26.4|182|
+143|Isaiah Stewart|C/PF|MEM|18.8|16.0|58|13.0|68|26.4|206|Sleeper status: Out
+144|Brayden Burries|PG/SG|MIL|18.9||0|12.1|70|26.2|188|no 25-26 games: GP guessed
+145|Kevin Porter|PG/SG|MIL|22.4|30.9|38|12.7|48|26.0|119|Sleeper status: GTD
+146|Collin Gillespie|PG/SG|PHX|20.4|21.3|80|12.1|57|25.7|230|Sleeper status: GTD
+147|Grayson Allen|SF/SG|CHA|20.3|22.8|51|11.6|59|25.6|168|Sleeper status: GTD
+148|Devin Vassell|SF/SG|SAS|19.9|20.0|67|11.9|60|25.6|97|
+149|Jrue Holiday|PG/SG|POR|19.9|25.2|53|11.6|59|25.3|136|
+150|Neemias Queta|C|BOS|20.2|22.4|76|10.9|59|25.3|143|Sleeper status: DTD
+151|Jabari Smith|PF|HOU|20.5|22.0|77|10.5|58|25.2|117|
+152|Myles Turner|C|MIL|19.3|18.1|71|12.6|59|25.2|80|
+153|Cameron Johnson|PF/SF/SG|DEN|19.6|19.0|54|12.3|58|25.1|123|
+154|Pelle Larsson|SF/SG|MIA|18.7|18.4|70|13.2|60|25.1|253|Sleeper status: DTD
+155|Jusuf Nurkić|C|UTA|20.0|21.9|41|11.7|57|25.1|173|Sleeper status: Out
+156|Keldon Johnson|PF/SF|SAS|19.3|19.7|82|11.4|62|25.0|201|
+157|Keaton Wagler|PG/SG|LAC|17.9||0|11.9|70|25.0|181|no 25-26 games: GP guessed
+158|Ace Bailey|PF/SF|UTA|18.4|16.8|72|13.8|60|25.0|130|
+159|Paul Reed|C/PF|DET|16.7|15.6|65|13.7|70|24.9|203|role change: GP guessed
+160|Bobby Portis|C/PF|MIA|19.1|19.3|67|11.6|60|24.7|160|
+161|Cason Wallace|PG/SF/SG|OKC|17.4|15.4|77|13.3|65|24.7|165|Sleeper status: DTD
+162|Kyle Filipowski|C/PF|UTA|18.5|19.0|77|13.0|59|24.6|194|Sleeper status: DTD
+163|P.J. Washington|C/PF/SF|DAL|19.5|20.0|56|11.1|59|24.6|125|
+164|Kyshawn George|SF/SG|WAS|18.4|20.6|48|12.6|60|24.5|106|
+165|Shaedon Sharpe|PG/SG|POR|19.8|23.5|50|12.2|53|24.4|99|Sleeper status: Out
+166|Cam Spencer|PG/SF/SG|MEM|19.2|21.4|72|11.4|58|24.3|263|
+167|Toumani Camara|PF/SF/SG|POR|18.4|18.8|82|12.7|58|24.1|115|
+168|Daniel Gafford|C|DAL|18.6|19.2|55|12.1|57|24.0|158|
+169|Chris Paul|PG||16.8|5.8|16|11.7|70|23.9|161|role change: GP guessed; big projected jump vs 25-26
+170|Jared McCain|PG/SG|OKC|15.1|10.1|67|14.4|70|23.7|167|role change: GP guessed
+171|Naji Marshall|PF/SF/SG|DAL|19.0|23.0|74|12.1|53|23.5|243|
+172|Wendell Carter|C|ORL|18.7|20.0|78|10.5|57|23.3|183|
+173|Daniss Jenkins|PG/SG|DET|16.4|14.3|72|15.8|56|23.3|255|
+174|Taylor Hendricks|C/PF|MEM|15.3|11.5|59|15.1|63|23.2|290|
+175|Kyle Kuzma|PF/SF|MIL|18.2|18.2|69|12.1|55|23.1|156|
+176|Aaron Nesmith|SF/SG|IND|17.1|16.6|45|13.5|57|23.1|149|Sleeper status: DTD
+177|Jaylen Wells|SF/SG|MEM|16.8|15.8|69|12.5|59|22.7|235|
+178|Tobias Harris|PF|SAS|17.9|20.5|63|10.6|58|22.7|135|Sleeper status: DTD
+179|Kingston Flemings|PG/SG|ATL|15.7||0|11.5|70|22.6|159|no 25-26 games: GP guessed
+180|Anfernee Simons|PG/SG|PHI|16.9|17.5|55|11.7|60|22.5|126|Sleeper status: DTD
+181|Reed Sheppard|PG/SG|HOU|17.5|19.6|82|12.0|55|22.4|109|
+182|Morez Johnson|C/PF|DAL|15.5||0|11.5|70|22.4|162|no 25-26 games: GP guessed
+183|Yves Missi|C|NOP|16.5|13.5|66|10.3|67|22.3|246|
+184|Obi Toppin|PF/SF|IND|16.3|17.9|24|11.5|63|22.3|261|
+185|Aaron Wiggins|PF/SF/SG|ATL|14.9|12.6|65|12.9|66|22.1|226|
+186|Miles McBride|PG/SG|NYK|16.4|16.9|41|11.8|58|21.9|223|
+187|Nikola Jović|C/PF/SF|MIA|12.2|9.2|47|16.0|70|21.9|262|
+188|Dillon Brooks|PF/SF/SG|PHX|16.5|20.8|56|11.2|59|21.8|144|
+189|Precious Achiuwa|C/PF|SAC|16.1|18.1|73|12.4|57|21.7|284|
+190|Malik Monk|PG/SG|SAC|15.8|16.0|62|13.2|56|21.6|132|Sleeper status: DTD
+191|Tre Johnson|PG/SG|WAS|16.2|13.4|60|12.4|56|21.5|197|
+192|Dailyn Swain|PF/SF|CHI|14.7||0|11.3|70|21.5|248|no 25-26 games: GP guessed
+193|Isaiah Joe|SF/SG|DET|15.4|15.9|71|11.2|62|21.2|270|
+194|Bilal Coulibaly|PF/SF|WAS|16.1|17.8|56|11.2|57|21.2|184|
+195|Scotty Pippen|PG|MEM|16.0|16.7|10|10.6|59|21.0|242|
+196|Kasparas Jakučionis|PG/SG|MIL|13.6|11.1|53|12.9|67|20.9|214|
+197|Jake LaRavia|SF/SG|LAL|14.8|14.1|82|12.7|60|20.9|240|
+198|Nique Clifford|SF/SG|SAC|13.6|11.4|75|13.6|63|20.8|269|
+199|Robert Williams|C|POR|16.4|17.3|59|9.0|61|20.7|151|
+200|Joan Beringer|C|MIN|14.0|7.8|40|11.2|70|20.7|209|role change: GP guessed; big projected jump vs 25-26

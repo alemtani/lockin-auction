@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lock-In Auction</title>
+<style>
+:root{--bg:#fff;--fg:#111;--mut:#666;--line:#ddd;--card:#f6f6f6;--bid:#0a7d32;--stop:#c0262d;--hold:#1d5fbf;--open:#8a5a00;--warn:#b26b00}
+@media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mut:#999;--line:#333;--card:#1c1c1c}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.35 -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg);padding:0 0 60px}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:8px 10px;min-height:40px}
+input,select,textarea{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px;min-height:40px}
+#top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding:6px 10px 8px}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+.badge{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--card);border:1px solid var(--line)}
+.badge.bad{background:var(--stop);color:#fff;border-color:var(--stop)}
+.badge.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+.row{display:flex;gap:6px;align-items:center}
+.grow{flex:1;min-width:0}
+#pname{width:100%}
+#ac{position:absolute;left:10px;right:10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;max-height:50vh;overflow:auto;z-index:9}
+#ac div{padding:10px;border-bottom:1px solid var(--line)}
+.pinfo{font-size:13px;color:var(--mut);margin:3px 0}
+#amt{width:70px;text-align:center;font-weight:700;font-size:18px}
+.chips{display:flex;gap:4px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch}
+.chip{white-space:nowrap;padding:6px 10px;min-height:38px;font-size:13px}
+.chip.on{background:var(--fg);color:var(--bg)}
+.chip.tapped{opacity:.45}
+#action{border-radius:10px;padding:8px 10px;color:#fff;margin-top:4px}
+#action .big{font-size:28px;font-weight:800}
+#action.BID{background:var(--bid)}#action.STOP{background:var(--stop)}#action.HOLD{background:var(--hold)}#action.OPEN{background:var(--open)}#action.NONE{background:var(--mut)}
+.note{font-size:13px;font-weight:600}
+.reason{font-size:12px;opacity:.95}
+.basis{font-size:12px;color:var(--mut);margin-top:3px}
+.basis.stale{color:var(--warn);font-weight:700}
+.bigbtn{font-weight:800;padding:10px 14px}
+#sold{background:var(--stop);color:#fff;border-color:var(--stop)}
+nav{display:flex;gap:2px;overflow-x:auto;padding:6px 10px;border-bottom:1px solid var(--line)}
+nav button{flex:1;font-size:13px;padding:6px}
+nav button.on{background:var(--fg);color:var(--bg)}
+section{padding:8px 10px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--bg);cursor:pointer}
+td.l,th.l{text-align:left}
+td.nm{max-width:130px;overflow:hidden;text-overflow:ellipsis}
+tr.sold td{opacity:.4}
+.pos{color:var(--bid)}.neg{color:var(--stop)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px}
+.mut{color:var(--mut)}
+.small{font-size:12px}
+textarea{width:100%;min-height:120px;font-size:12px}
+.pass{color:var(--bid);font-weight:700}.fail{color:var(--stop);font-weight:700}
+#toast{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px;border-radius:10px;display:none;z-index:20}
+</style>
+</head>
+<body>
+<div id="top">
+  <div class="badges" id="badges"></div>
+  <div style="position:relative">
+    <input id="pname" placeholder="Player on the block…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="ac" hidden></div>
+  </div>
+  <div class="pinfo" id="pinfo"></div>
+  <div class="row">
+    <button id="m1">−1</button>
+    <input id="amt" type="number" inputmode="numeric" placeholder="$">
+    <button id="p1">+1</button><button id="p5">+5</button>
+    <span class="grow"></span>
+    <button id="clr">Clear</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="action" class="NONE"><div class="big" id="abig">Pick a player</div><div class="note" id="anotes"></div><div class="reason" id="areason"></div></div>
+  <div class="basis" id="basis"></div>
+  <div class="row" style="margin-top:6px">
+    <button id="ibid" class="bigbtn grow">I bid it</button>
+    <button id="sold" class="bigbtn grow">SOLD</button>
+  </div>
+</div>
+<nav id="nav"></nav>
+<section id="v-board"></section>
+<section id="v-nom" hidden></section>
+<section id="v-teams" hidden></section>
+<section id="v-sales" hidden></section>
+<section id="v-log" hidden></section>
+<section id="v-more" hidden></section>
+<div id="toast"></div>
+<script>
+'use strict';
+// ---------- config ----------
+const Q = new URLSearchParams(location.search);
+const CFG = {
+  league: Q.get('league') || '1411220743328387072',
+  draft: Q.get('draft') || '',
+  me: Q.get('me') || '872689087335858176',   // Sleeper user_id of alemtani
+  defaultMySlot: 10,
+  teams: 10, budget: 165, spots: 14, valued: 140, replRank: 100, surplus: 1510,
+  slots: ['PG','SG','G','SF','PF','F','C','UTIL','UTIL'],
+};
+const SLOT_OK = {PG:['PG'],SG:['SG'],G:['PG','SG'],SF:['SF'],PF:['PF'],F:['SF','PF'],C:['C'],UTIL:null};
+const API = 'https://api.sleeper.app/v1';
+const BACKOFF = [5, 10, 20, 30];
+
+// ---------- valuation (pure) ----------
+function parseSeed(text) {
+  const lines = text.trim().split(/\r?\n/), head = lines[0].split('|');
+  return lines.slice(1).map(l => {
+    const c = l.split('|'), r = {}; head.forEach((h, i) => r[h] = c[i] ?? '');
+    return {
+      id: r.sleeper_id || ('seed:' + r.name), name: r.name, pos: r.pos.split('/').filter(Boolean), team: r.team,
+      fpg: +r.fpg, rw: +r.rw_fpg || +r.fpg, espn: r.espn_fpg === '' || r.espn_fpg == null ? null : +r.espn_fpg,
+      sigma: +r.sigma, gp: +r.proj_gp, weekly: +r.weekly, adp: +r.adp_rank || 999,
+      yexp: r.years_exp === '' || r.years_exp == null ? null : +r.years_exp, injury: r.injury || '', flags: r.flags || '',
+    };
+  });
+}
+
+function valuate(players) {
+  const ps = players.slice().sort((a, b) => b.weekly - a.weekly);
+  const rep = ps[CFG.replRank - 1].weekly;
+  ps.forEach((p, i) => { p.rank = i + 1; p.vorp = Math.max(0, p.weekly - rep); });
+  const tot = ps.slice(0, CFG.valued).reduce((s, p) => s + p.vorp, 0);
+  ps.forEach(p => p.val = p.rank <= CFG.valued ? 1 + p.vorp / tot * CFG.surplus : 0);
+  const byRank = ps.map(p => p.val);
+  ps.forEach(p => { p.mkt = byRank[p.adp - 1] ?? 0; p.edge = p.val - p.mkt; p.cv = p.sigma / p.fpg; });
+  const cvs = ps.map(p => p.cv).sort((a, b) => a - b);
+  const cvQ3 = cvs[Math.floor(cvs.length * 0.75)];
+  ps.forEach(p => p.upside = p.cv >= cvQ3);
+  return ps;
+}
+
+// ---------- league state (pure) ----------
+function teamStats(slots, sales) {
+  const t = {};
+  for (const s of slots) t[s] = {spent: 0, n: 0, unknown: 0, players: []};
+  for (const [pid, s] of Object.entries(sales)) {
+    const x = t[s.slot]; if (!x) continue;
+    x.n++; x.players.push(pid);
+    if (s.price == null) x.unknown++; else x.spent += s.price;
+  }
+  for (const s of slots) {
+    const x = t[s]; x.spots = CFG.spots - x.n; x.left = CFG.budget - x.spent;
+    x.maxBid = x.spots > 0 ? x.left - (x.spots - 1) : 0;
+  }
+  return t;
+}
+
+function leagueState(players, slots, meSlot, sales) {
+  const t = teamStats(slots, sales);
+  let left = 0, spots = 0;
+  for (const s of slots) { left += t[s].left; spots += Math.max(0, t[s].spots); }
+  const spendable = left - spots;
+  const unsold = players.filter(p => !sales[p.id]);
+  const surplus = unsold.reduce((s, p) => s + (p.val > 1 ? p.val - 1 : 0), 0);
+  const inflation = surplus > 0 ? spendable / surplus : 1;
+  const opp = slots.filter(s => s != meSlot).map(s => t[s].maxBid).sort((a, b) => b - a);
+  const me = t[meSlot];
+  const mySpendable = me.left - me.spots;
+  const topN = unsold.slice().sort((a, b) => b.val - a.val).slice(0, 2 * me.spots);
+  const pmDen = topN.reduce((s, p) => s + Math.max(0, p.val - 1), 0);
+  const pm = pmDen > 0 ? mySpendable / pmDen : 0;
+  return {t, left, spots, spendable, surplus, inflation, hi1: opp[0] ?? 0, hi2: opp[1] ?? 0, me, meSlot, mySpendable, pm,
+    mult: Math.max(inflation, pm), lateStage: me.spots > 0 && me.left / me.spots < 4};
+}
+
+// Open starting slots for a roster (augmenting-path matching of players to slots).
+function openSlots(rosterPlayers) {
+  const slots = CFG.slots, owner = new Array(slots.length).fill(-1);
+  const fits = (p, i) => !SLOT_OK[slots[i]] || p.pos.some(x => SLOT_OK[slots[i]].includes(x));
+  function place(pi, seen) {
+    for (let i = 0; i < slots.length; i++) {
+      if (seen[i] || !fits(rosterPlayers[pi], i)) continue; seen[i] = 1;
+      if (owner[i] < 0 || place(owner[i], seen)) { owner[i] = pi; return true; }
+    }
+    return false;
+  }
+  rosterPlayers.forEach((_, pi) => place(pi, []));
+  return slots.filter((_, i) => owner[i] < 0);
+}
+
+function myMax(p, L) {
+  const r = {base: 0, bonus: 0, why: [], max: 0, noSlot: false};
+  if (L.me.spots <= 0) { r.noSlot = true; return r; }
+  r.base = p.val > 0 ? Math.max(0, Math.round(1 + (p.val - 1) * L.mult)) : 0;
+  if (L.lateStage) {
+    if (p.injury === 'Out') r.why.push('Out → IR stash');
+    if (p.upside) r.why.push('high σ/μ');
+    if (p.yexp === 0) r.why.push('rookie');
+    r.bonus = Math.min(3, r.why.length);
+  }
+  r.max = Math.min(L.me.maxBid, r.base + r.bonus);
+  return r;
+}
+
+function openingBid(p, mx, L) {
+  if (p.edge < 0) return {kind: 'drain', amt: Math.max(1, Math.min(mx, Math.round(0.8 * p.mkt)))};
+  return {kind: 'target', amt: mx > L.hi1 ? L.hi1 + 1 : 1};
+}
+
+// Bid card decision. bid = {amt, slot} (amt null = nothing entered yet).
+function decide(p, bid, L, names) {
+  const M = myMax(p, L), mx = M.max, notes = [];
+  const out = {action: 'NONE', amt: null, max: mx, notes, M};
+  if (M.noSlot) { out.action = 'STOP'; notes.push('no roster slot'); return out; }
+  if (mx > L.hi1) notes.push(`only you can go above $${L.hi1}`);
+  if (bid.amt == null || bid.amt === '') {
+    const o = openingBid(p, mx, L);
+    out.action = 'OPEN'; out.amt = o.amt; out.kind = o.kind;
+    return out;
+  }
+  const cur = +bid.amt, lead = bid.slot;
+  if (lead != null && lead != L.meSlot) {
+    const lt = L.t[lead];
+    if (lt && cur > lt.maxBid) notes.push(`${names(lead)} bid above its max of $${lt.maxBid} — check input`);
+    else if (lt && lt.maxBid < cur + 2) notes.push(`${names(lead)} is tapped out at $${lt.maxBid}`);
+  }
+  if (lead == L.meSlot) { out.action = 'HOLD'; out.amt = cur; return out; }
+  if (cur + 1 > mx) { out.action = 'STOP'; out.amt = mx; return out; }
+  out.action = 'BID'; out.amt = cur + 1;
+  if (mx > L.hi1 && L.hi1 + 1 <= mx && L.hi1 + 1 > cur + 1) out.amt = L.hi1 + 1;
+  return out;
+}
+
+const sgnF = x => (Math.round(x) >= 0 ? '+' : '−') + '$' + Math.abs(Math.round(x));
+function reasonLine(p, d, L) {
+  const m = L.mult, src = L.pm > L.inflation ? 'your multiplier' : 'inflation';
+  let s = `Value $${Math.round(p.val)} × ${src} ${m.toFixed(2)} = $${d.M.base}`;
+  if (d.M.bonus) s += ` + $${d.M.bonus} late bonus (${d.M.why.join(', ')})`;
+  if (d.M.max < d.M.base + d.M.bonus) s += `, capped at your max bid $${L.me.maxBid}`;
+  s += ` → max $${d.max}; Edge ${sgnF(p.edge)} vs market $${Math.round(p.mkt)}`;
+  s += `; you're at $${L.me.left} with ${L.me.spots} spots left.`;
+  return s;
+}
+
+// Nomination order: round-robin by draft slot, skipping full rosters.
+function nominator(slots, sales) {
+  const order = slots.slice().sort((a, b) => a - b), count = {};
+  order.forEach(s => count[s] = 0);
+  const seq = Object.values(sales).sort((a, b) => a.ts - b.ts);
+  let ptr = 0;
+  const next = () => { for (let k = 0; k < order.length; k++) { const s = order[(ptr + k) % order.length]; if (count[s] < CFG.spots) { ptr = (ptr + k) % order.length; return s; } } return null; };
+  for (const sale of seq) { next(); if (count[sale.slot] != null) count[sale.slot]++; ptr = (ptr + 1) % order.length; }
+  return next();
+}
+
+// Reconcile API picks into sales. Returns warnings.
+function reconcile(sales, picks) {
+  const warn = [], added = [];
+  for (const pk of picks) {
+    const pid = pk.player_id, cur = sales[pid];
+    const v = {slot: pk.slot, price: pk.price, src: 'api', ts: cur?.ts || pk.ts || Date.now()};
+    if (!cur) { sales[pid] = v; added.push(pid); continue; }
+    if (cur.src === 'api' && cur.slot == v.slot && cur.price === v.price) continue;
+    if (cur.slot != v.slot || cur.price !== v.price)
+      warn.push(`${pid}: you had $${cur.price ?? '?'} to slot ${cur.slot}; Sleeper says $${v.price ?? '?'} to slot ${v.slot}`);
+    if (v.price == null && cur.price != null) v.price = cur.price; // keep a typed price when API lacks one
+    sales[pid] = v;
+  }
+  return {warn, added};
+}
+
+function isStale(bid, now) { return bid.amt != null && bid.amt !== '' && now - bid.ts > 20000; }
+function backoffDelay(fails) { return BACKOFF[Math.min(fails, BACKOFF.length - 1)]; }
+
+// ---------- app state ----------
+let PLAYERS = [], BYID = {}, S, LS, timer = null, fails = 0, lastGood = 0, online = false, loadedLive = false;
+const store = (() => { try { localStorage.setItem('_t', '1'); return localStorage; } catch (e) { const m = {}; return {getItem: k => m[k] ?? null, setItem: (k, v) => m[k] = String(v)}; } })();
+
+function defaultState() {
+  const teams = {};
+  for (let s = 1; s <= CFG.teams; s++) teams[s] = {name: s === CFG.defaultMySlot ? 'Me' : 'Team ' + s};
+  return {v: 1, teams, meSlot: CFG.defaultMySlot, sales: {}, bid: {pid: null, amt: null, slot: null, ts: 0}, log: [], extra: {}};
+}
+const KEY = () => 'lockin:' + (Q.get('draft') ? 'draft:' + Q.get('draft') : 'league:' + CFG.league);
+function save() { store.setItem(KEY(), JSON.stringify(S)); }
+function loadState() { try { const x = JSON.parse(store.getItem(KEY())); if (x && x.v === 1) return x; } catch (e) {} return defaultState(); }
+function log(msg) { S.log.unshift(new Date().toLocaleTimeString() + ' ' + msg); S.log.length = Math.min(S.log.length, 50); save(); if (cur === 'log') renderLog(); }
+const slots = () => Object.keys(S.teams).map(Number);
+const tname = s => s == S.meSlot ? 'Me' : (S.teams[s]?.name || 'Team ' + s);
+const P = id => BYID[id] || S.extra[id] || {id, name: id, pos: [], team: '', val: 0, mkt: 0, edge: 0, fpg: 0, sigma: 0, flags: 'no projection'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const r0 = x => Math.round(x);
+const sgn = x => (r0(x) >= 0 ? '+' : '−') + '$' + Math.abs(r0(x));
+function toast(html, ms = 4000) { const t = $('toast'); t.innerHTML = html; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
+
+// ---------- network ----------
+async function getJSON(url, ms = 5000) {
+  const c = new AbortController(), h = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(url, {signal: c.signal, cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+  finally { clearTimeout(h); }
+}
+
+async function loadLeague() {
+  try {
+    let draft;
+    if (!CFG.draft) {
+      const lg = await getJSON(`${API}/league/${CFG.league}`);
+      CFG.draft = lg.draft_id;
+    }
+    draft = await getJSON(`${API}/draft/${CFG.draft}`);
+    const order = draft.draft_order || {};
+    let users = [];
+    if (draft.league_id) users = await getJSON(`${API}/league/${draft.league_id}/users`).catch(() => []);
+    const nm = {}; users.forEach(u => nm[u.user_id] = (u.metadata && u.metadata.team_name) || u.display_name);
+    const nTeams = (draft.settings && draft.settings.teams) || CFG.teams;
+    const teams = {};
+    for (let s = 1; s <= nTeams; s++) teams[s] = {name: S.teams[s]?.edited ? S.teams[s].name : 'Team ' + s, edited: S.teams[s]?.edited};
+    for (const [uid, slot] of Object.entries(order)) if (nm[uid] && !teams[slot].edited) teams[slot].name = nm[uid];
+    S.teams = teams;
+    if (order[CFG.me]) S.meSlot = order[CFG.me];
+    S.slotToRoster = draft.slot_to_roster_id || {};
+    S.userToSlot = order;
+    online = true; loadedLive = true; lastGood = Date.now();
+    log(`league loaded: draft ${CFG.draft}, ${nTeams} teams, you are slot ${S.meSlot}`);
+    save(); render();
+  } catch (e) {
+    online = false; log('league load failed: ' + e.message + ' — OFFLINE, using saved/default teams'); render();
+  }
+}
+
+function pickSlot(pk) {
+  if (pk.picked_by && S.userToSlot && S.userToSlot[pk.picked_by]) return +S.userToSlot[pk.picked_by];
+  if (pk.roster_id != null && S.slotToRoster) {
+    const s = Object.entries(S.slotToRoster).find(([, r]) => r == pk.roster_id); if (s) return +s[0];
+  }
+  return pk.draft_slot ? +pk.draft_slot : null;
+}
+
+async function poll() {
+  clearTimeout(timer);
+  if (!CFG.draft) { await loadLeague(); if (!CFG.draft) { fails++; schedule(); return; } }
+  try {
+    const raw = await getJSON(`${API}/draft/${CFG.draft}/picks`);
+    const picks = raw.filter(pk => pk.player_id).map(pk => {
+      const a = pk.metadata && pk.metadata.amount;
+      if (!BYID[pk.player_id] && !S.extra[pk.player_id]) {
+        const m = pk.metadata || {};
+        S.extra[pk.player_id] = {id: pk.player_id, name: `${m.first_name || ''} ${m.last_name || pk.player_id}`.trim(), pos: (m.position || '').split('/'), team: m.team || '', val: 0, mkt: 0, edge: 0, fpg: 0, sigma: 0, flags: 'no projection'};
+        S.extra[pk.player_id]._k = S.extra[pk.player_id].name.toLowerCase();
+      }
+      return {player_id: pk.player_id, slot: pickSlot(pk), price: a != null && a !== '' && !isNaN(+a) ? +a : null, ts: Date.now() + (pk.pick_no || 0)};
+    });
+    const {warn, added} = reconcile(S.sales, picks);
+    added.forEach(pid => { const s = S.sales[pid]; log(`API sale: ${P(pid).name} → ${tname(s.slot)} $${s.price ?? '?'}`); if (s.price == null) toast(`Sleeper gave no price for ${esc(P(pid).name)}. Enter it in Sales.`); });
+    warn.forEach(w => { const pid = w.split(':')[0]; log('reconcile: ' + P(pid).name + w.slice(pid.length)); });
+    if (added.length && S.bid.pid && S.sales[S.bid.pid]) clearBid();
+    if (fails) log(`poll recovered after ${fails} failures`);
+    fails = 0; online = true; lastGood = Date.now(); save();
+    if (added.length || warn.length) render(); else renderBadges();
+  } catch (e) {
+    fails++; if (fails === 1 || fails % 5 === 0) log(`poll failed (${fails}): ${e.message}`); renderBadges();
+  }
+  schedule();
+}
+function schedule() { clearTimeout(timer); timer = setTimeout(poll, backoffDelay(fails) * 1000); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); render(); } });
+
+// ---------- actions ----------
+function setBid(patch) { Object.assign(S.bid, patch, {ts: Date.now()}); save(); renderCard(); }
+function clearBid() { S.bid = {pid: null, amt: null, slot: null, ts: 0}; $('pname').value = ''; save(); renderCard(); }
+function loadPlayer(pid) { S.bid = {pid, amt: null, slot: null, ts: Date.now()}; $('pname').value = P(pid).name; save(); renderCard(); window.scrollTo(0, 0); }
+function recordSale(pid, slot, price, src = 'manual') {
+  if (!pid || slot == null) return toast('Need a player and a team.');
+  S.sales[pid] = {slot: +slot, price: price === '' || price == null ? null : +price, src, ts: S.sales[pid]?.ts || Date.now()};
+  log(`manual sale: ${P(pid).name} → ${tname(slot)} $${S.sales[pid].price ?? '?'}`);
+  save();
+}
+
+// ---------- rendering ----------
+let cur = 'board', sortKey = 'rank', sortDir = 1, showMore = false, filt = '', hideSold = false, confirmDel = null, editPid = null;
+function recompute() { LS = leagueState(PLAYERS, slots(), S.meSlot, S.sales); }
+
+function renderBadges() {
+  const b = [];
+  const srcs = PLAYERS.some(p => p.espn != null) ? '2 sources (RotoWire+ESPN)' : '1 source';
+  b.push(`<span class="badge">SEED DATA · ${srcs}</span>`);
+  if (!loadedLive) b.push('<span class="badge bad">OFFLINE</span>');
+  const age = lastGood ? Math.round((Date.now() - lastGood) / 1000) : null;
+  if (loadedLive && age != null && age > 15) b.push(`<span class="badge warn">STALE ${age < 120 ? age + 's' : Math.round(age / 60) + 'm'}</span>`);
+  else if (loadedLive) b.push(`<span class="badge">live · ${Object.keys(S.sales).length} sold</span>`);
+  if (LS) b.push(`<span class="badge">infl ${LS.inflation.toFixed(2)}</span><span class="badge">me $${LS.me.left}/${LS.me.spots} · max $${LS.me.maxBid}</span>`);
+  const nomSlot = nominator(slots(), S.sales);
+  if (nomSlot == S.meSlot) b.push('<span class="badge warn">YOUR NOMINATION</span>');
+  $('badges').innerHTML = b.join('');
+}
+
+function renderCard() {
+  recompute(); renderBadges();
+  const bid = S.bid, chips = $('chips');
+  const order = [S.meSlot, ...slots().filter(s => s != S.meSlot)];
+  chips.innerHTML = order.map(s => `<button class="chip ${bid.slot == s ? 'on' : ''} ${LS.t[s].spots <= 0 ? 'tapped' : ''}" data-slot="${s}">${esc(tname(s))} <span class="small">$${LS.t[s].maxBid}</span></button>`).join('');
+  $('amt').value = bid.amt ?? '';
+  const A = $('action');
+  if (!bid.pid) {
+    A.className = 'NONE'; $('abig').textContent = 'Pick a player'; $('anotes').textContent = ''; $('areason').textContent = '';
+    $('pinfo').textContent = ''; $('basis').textContent = ''; $('ibid').textContent = 'I bid it'; $('ibid').dataset.amt = ''; return;
+  }
+  const p = P(bid.pid);
+  $('pinfo').innerHTML = `${esc(p.pos.join('/'))} ${esc(p.team)} · $${r0(p.val)} · mkt $${r0(p.mkt)} · edge ${sgn(p.edge)} · ${p.fpg.toFixed(1)} FP/G${p.flags ? ' · <b>' + esc(p.flags) + '</b>' : ''}`;
+  if (S.sales[bid.pid]) { A.className = 'NONE'; $('abig').textContent = `Sold: ${tname(S.sales[bid.pid].slot)} $${S.sales[bid.pid].price ?? '?'}`; $('anotes').textContent = ''; $('areason').textContent = ''; $('basis').textContent = ''; return; }
+  const d = decide(p, {amt: bid.amt, slot: bid.slot}, LS, tname);
+  A.className = d.action;
+  $('abig').textContent = d.action === 'OPEN' ? `OPEN AT $${d.amt}` : d.action === 'BID' ? `BID $${d.amt}` : d.action === 'HOLD' ? 'HOLD' : `STOP`;
+  const extra = d.action === 'OPEN' ? [`your max $${d.max}`, d.kind === 'drain' ? 'drain: room overpays, fine to lose him' : 'target'] :
+    d.action === 'HOLD' ? [`you're winning at $${d.amt}; your max is $${d.max}`] :
+    d.action === 'STOP' && !d.M.noSlot ? [`price passed your max of $${d.max}`] : [`your max $${d.max}`];
+  $('anotes').textContent = [...extra, ...d.notes].join(' · ');
+  $('areason').textContent = reasonLine(p, d, LS);
+  if (bid.amt != null && bid.amt !== '') {
+    const age = Math.round((Date.now() - bid.ts) / 1000), stale = isStale(bid, Date.now());
+    $('basis').className = 'basis' + (stale ? ' stale' : '');
+    $('basis').textContent = `for $${bid.amt} by ${bid.slot != null ? tname(bid.slot) : '(team?)'}, entered ${new Date(bid.ts).toLocaleTimeString()} (${age}s ago)` + (stale ? ' — update current bid' : '');
+  } else { $('basis').className = 'basis'; $('basis').textContent = 'no bid entered yet'; }
+  $('ibid').textContent = d.action === 'BID' || d.action === 'OPEN' ? `I bid $${d.amt}` : 'I bid it';
+  $('ibid').dataset.amt = d.amt ?? '';
+}
+
+const COLS = [
+  ['rank', '#', p => p.rank, 0], ['name', 'Name', p => p.name, 0, 'l nm'], ['val', '$', p => r0(p.val), 0], ['mkt', 'Mkt', p => r0(p.mkt), 0],
+  ['edge', 'Edge', p => r0(p.edge), 0], ['mymax', 'Max', p => p._mx, 0],
+  ['pos', 'Pos', p => p.pos.join('/'), 1, 'l'], ['team', 'Tm', p => p.team, 1, 'l'], ['fpg', 'FP/G', p => p.fpg.toFixed(1), 1], ['espn', 'ESPN', p => p.espn == null ? '' : p.espn.toFixed(1), 1],
+  ['sigma', 'σ', p => p.sigma.toFixed(1), 1], ['gp', 'GP', p => p.gp, 1], ['weekly', 'Wk', p => p.weekly.toFixed(1), 1], ['vorp', 'VORP', p => p.vorp.toFixed(1), 1], ['flags', 'Flags', p => p.flags, 1, 'l'],
+];
+function renderBoard() {
+  recompute();
+  const rows = PLAYERS.filter(p => (!filt || p.name.toLowerCase().includes(filt)) && !(hideSold && S.sales[p.id]));
+  rows.forEach(p => p._mx = S.sales[p.id] ? -1 : myMax(p, LS).max);
+  const col = COLS.find(c => c[0] === sortKey);
+  rows.sort((a, b) => { const x = col[2](a), y = col[2](b); return (typeof x === 'string' ? x.localeCompare(y) : x - y) * sortDir; });
+  const cols = COLS.filter(c => !c[3] || showMore);
+  $('v-board').innerHTML = `<div class="row" style="margin-bottom:6px"><input id="filt" class="grow" placeholder="Filter name" value="${esc(filt)}"><button id="more">${showMore ? 'less' : 'more'}</button><button id="hs">${hideSold ? 'show sold' : 'hide sold'}</button></div>
+  <div class="tw"><table><tr>${cols.map(c => `<th class="${c[4] || ''}" data-k="${c[0]}">${c[1]}${sortKey === c[0] ? (sortDir > 0 ? '↑' : '↓') : ''}</th>`).join('')}</tr>
+  ${rows.map(p => { const s = S.sales[p.id]; return `<tr class="${s ? 'sold' : ''}" data-pid="${p.id}">${cols.map(c => {
+    let v = c[2](p); if (c[0] === 'mymax') v = s ? `${esc(tname(s.slot))} $${s.price ?? '?'}` : '$' + v;
+    const cls = (c[4] || '') + (c[0] === 'edge' ? (p.edge >= 0 ? ' pos' : ' neg') : '');
+    return `<td class="${cls}">${esc(v)}</td>`; }).join('')}</tr>`; }).join('')}</table></div>`;
+  $('filt').oninput = e => { filt = e.target.value.toLowerCase(); const pos = e.target.selectionStart; renderBoard(); $('filt').focus(); $('filt').setSelectionRange(pos, pos); };
+  $('more').onclick = () => { showMore = !showMore; renderBoard(); };
+  $('hs').onclick = () => { hideSold = !hideSold; renderBoard(); };
+  $('v-board').querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = ['rank', 'name', 'pos', 'team'].includes(k) ? 1 : -1; } renderBoard(); });
+  $('v-board').querySelectorAll('tr[data-pid]').forEach(tr => tr.onclick = () => loadPlayer(tr.dataset.pid));
+}
+
+function renderNom() {
+  recompute();
+  const unsold = PLAYERS.filter(p => !S.sales[p.id] && p.val > 0);
+  const drains = unsold.slice().sort((a, b) => a.edge - b.edge).slice(0, 3);
+  const targets = unsold.filter(p => myMax(p, LS).max >= 1).sort((a, b) => b.edge - a.edge).slice(0, 3);
+  const nom = nominator(slots(), S.sales);
+  const item = (p, kind) => { const mx = myMax(p, LS).max, o = kind === 'drain' ? {amt: Math.max(1, Math.min(mx, r0(0.8 * p.mkt)))} : openingBid(Object.assign({}, p, {edge: Math.abs(p.edge)}), mx, LS);
+    return `<div class="card" data-pid="${p.id}" data-amt="${o.amt}"><b>${esc(p.name)}</b> <span class="mut">${esc(p.pos.join('/'))} ${esc(p.team)}</span><br>Open at <b>$${o.amt}</b> · value $${r0(p.val)} · mkt $${r0(p.mkt)} · edge ${sgn(p.edge)} · your max $${mx}</div>`; };
+  $('v-nom').innerHTML = `<p>${nom == S.meSlot ? '<b>Your nomination now.</b>' : `Next nominator (estimate): <b>${esc(tname(nom))}</b>`} <span class="mut small">(round-robin by slot, skipping full rosters)</span></p>
+  <h3>Drain the room</h3><p class="mut small">Most negative edge: others will overpay. Opening ≤ your max, since you might win him.</p>${drains.map(p => item(p, 'drain')).join('')}
+  <h3>Targets</h3><p class="mut small">Most positive edge. Open at $1, or above every opponent's max when only you can pay.</p>${targets.map(p => item(p, 'target')).join('')}`;
+  $('v-nom').querySelectorAll('.card').forEach(c => c.onclick = () => { loadPlayer(c.dataset.pid); toast(`Loaded. Open at $${c.dataset.amt}.`); });
+}
+
+function renderTeams() {
+  recompute();
+  const mine = Object.entries(S.sales).filter(([, s]) => s.slot == S.meSlot).map(([pid]) => P(pid));
+  const open = openSlots(mine);
+  $('v-teams').innerHTML = `<div class="card small">League $ left <b>$${LS.left}</b> · spots ${LS.spots} · spendable $${LS.spendable} · inflation <b>${LS.inflation.toFixed(3)}</b> · your multiplier ${LS.pm.toFixed(2)} · top opponent max <b>$${LS.hi1}</b> (2nd $${LS.hi2})</div>
+  <div class="card small">Your open starting slots: <b>${open.join(', ') || 'none'}</b> · bench left ${Math.max(0, LS.me.spots - open.length)}</div>
+  <div class="tw"><table><tr><th class="l">Team (tap to rename)</th><th>Spent</th><th>Left</th><th>Spots</th><th>Max</th></tr>
+  ${slots().map(s => { const t = LS.t[s]; return `<tr><td class="l" data-slot="${s}">${s == S.meSlot ? '<b>Me</b> ' : ''}${esc(S.teams[s].name)} <span class="mut small">#${s}</span>${t.unknown ? ' <span class="neg small">' + t.unknown + ' price?</span>' : ''}</td><td>$${t.spent}</td><td>$${t.left}</td><td>${t.spots}</td><td><b>$${t.maxBid}</b></td></tr>`; }).join('')}</table></div>
+  <p class="small mut">Am I the wrong slot? <select id="meslot">${slots().map(s => `<option value="${s}" ${s == S.meSlot ? 'selected' : ''}>slot ${s}: ${esc(S.teams[s].name)}</option>`).join('')}</select></p>`;
+  $('v-teams').querySelectorAll('td[data-slot]').forEach(td => td.onclick = () => {
+    const s = td.dataset.slot; td.innerHTML = `<input value="${esc(S.teams[s].name)}" style="width:140px"> <button>OK</button>`;
+    const inp = td.querySelector('input'); inp.focus(); td.onclick = null;
+    td.querySelector('button').onclick = e => { e.stopPropagation(); S.teams[s].name = inp.value || 'Team ' + s; S.teams[s].edited = true; save(); render(); };
+  });
+  $('meslot').onchange = e => { S.meSlot = +e.target.value; log('my slot set to ' + S.meSlot); save(); render(); };
+}
+
+function teamSelect(id, sel) { return `<select id="${id}">${[S.meSlot, ...slots().filter(s => s != S.meSlot)].map(s => `<option value="${s}" ${s == sel ? 'selected' : ''}>${esc(tname(s))}</option>`).join('')}</select>`; }
+function renderSales() {
+  const list = Object.entries(S.sales).sort((a, b) => b[1].ts - a[1].ts);
+  $('v-sales').innerHTML = `<div class="card"><b>Add sale</b><div style="position:relative"><input id="as-p" placeholder="Player" style="width:100%" autocomplete="off"><div id="as-ac" class="acx" hidden style="position:absolute;left:0;right:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;max-height:40vh;overflow:auto;z-index:9"></div></div>
+  <div class="row" style="margin-top:4px"><input id="as-amt" type="number" inputmode="numeric" placeholder="$" style="width:80px">${teamSelect('as-t', S.meSlot)}<button id="as-go">Add</button></div></div>
+  ${list.length ? '' : '<p class="mut">No sales yet.</p>'}
+  ${list.map(([pid, s]) => editPid === pid ? `<div class="card"><b>${esc(P(pid).name)}</b><div class="row"><input id="ed-amt" type="number" inputmode="numeric" value="${s.price ?? ''}" style="width:80px" placeholder="$">${teamSelect('ed-t', s.slot)}<button id="ed-ok">Save</button><button id="ed-x">Cancel</button></div></div>` :
+    `<div class="card row"><div class="grow"><b>${esc(P(pid).name)}</b> → ${esc(tname(s.slot))} <b>${s.price == null ? '<span class="neg">$?</span>' : '$' + s.price}</b> <span class="mut small">${s.src} ${new Date(s.ts).toLocaleTimeString()}</span></div><button data-ed="${pid}">Edit</button><button data-del="${pid}">${confirmDel === pid ? 'Confirm' : 'Delete'}</button></div>`).join('')}`;
+  let asPid = null;
+  wireAC($('as-p'), $('as-ac'), pid => { asPid = pid; $('as-p').value = P(pid).name; });
+  $('as-go').onclick = () => { if (!asPid) return toast('Pick the player from the list.'); recordSale(asPid, $('as-t').value, $('as-amt').value); render(); };
+  $('v-sales').querySelectorAll('[data-ed]').forEach(b => b.onclick = () => { editPid = b.dataset.ed; renderSales(); });
+  $('v-sales').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+    const pid = b.dataset.del; if (confirmDel !== pid) { confirmDel = pid; renderSales(); setTimeout(() => { if (confirmDel === pid) { confirmDel = null; renderSales(); } }, 4000); return; }
+    confirmDel = null; log(`deleted sale: ${P(pid).name}`); delete S.sales[pid]; save(); render(); });
+  if (editPid) { $('ed-ok').onclick = () => { recordSale(editPid, $('ed-t').value, $('ed-amt').value); editPid = null; render(); }; $('ed-x').onclick = () => { editPid = null; renderSales(); }; }
+}
+function renderLog() { $('v-log').innerHTML = S.log.map(l => `<div class="small" style="border-bottom:1px solid var(--line);padding:4px 0">${esc(l)}</div>`).join('') || '<p class="mut">Empty.</p>'; }
+function renderMore() {
+  $('v-more').innerHTML = `<div class="card"><b>Export</b><p class="small mut">Copy this text to move or back up the draft.</p><textarea id="exp" readonly>${esc(JSON.stringify(S))}</textarea><button id="cp">Copy</button></div>
+  <div class="card"><b>Import</b><textarea id="imp" placeholder="Paste exported text"></textarea><button id="im">Import (replaces current state)</button></div>
+  <div class="card small">Draft ${esc(CFG.draft || '?')} · league ${esc(CFG.league)} · me ${esc(CFG.me)} (slot ${S.meSlot})<br>URL overrides: <code>?draft=ID&amp;me=USER_ID&amp;league=ID</code> · <a href="?test=1">run self-test</a></div>
+  <div class="card"><button id="reset">Reset this draft's saved state</button></div>`;
+  $('cp').onclick = () => { const t = $('exp'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => toast('Copied.'), () => toast('Select the text and copy it by hand.')); };
+  $('im').onclick = () => { try { const x = JSON.parse($('imp').value); if (x.v !== 1 || !x.sales) throw 0; S = x; save(); log('state imported'); render(); toast('Imported.'); } catch (e) { toast('That text is not a valid export.'); } };
+  let armed = false; $('reset').onclick = e => { if (!armed) { armed = true; e.target.textContent = 'Tap again to confirm reset'; return; } S = defaultState(); save(); loadLeague(); render(); toast('Reset.'); };
+}
+
+function render() {
+  renderCard();
+  ({board: renderBoard, nom: renderNom, teams: renderTeams, sales: renderSales, log: renderLog, more: renderMore})[cur]();
+}
+
+// ---------- autocomplete ----------
+function wireAC(input, box, onPick) {
+  input.oninput = () => {
+    const q = input.value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    if (q.length < 2) { box.hidden = true; return; }
+    const all = [...PLAYERS, ...Object.values(S.extra)];
+    const hits = all.filter(p => p._k.includes(q)).sort((a, b) => (S.sales[a.id] ? 1 : 0) - (S.sales[b.id] ? 1 : 0) || (a.rank || 999) - (b.rank || 999)).slice(0, 8);
+    box.innerHTML = hits.map(p => `<div data-pid="${p.id}"><b>${esc(p.name)}</b> <span class="mut small">${esc(p.pos.join('/'))} ${esc(p.team)} $${r0(p.val)}${S.sales[p.id] ? ' · sold' : ''}</span></div>`).join('') || '<div class="mut">No match</div>';
+    box.hidden = false;
+    box.querySelectorAll('[data-pid]').forEach(d => d.onclick = () => { box.hidden = true; onPick(d.dataset.pid); input.blur(); });
+  };
+  input.onblur = () => setTimeout(() => box.hidden = true, 200);
+}
+
+// ---------- wiring ----------
+function wire() {
+  const tabs = [['board', 'Board'], ['nom', 'Nominate'], ['teams', 'Teams'], ['sales', 'Sales'], ['log', 'Log'], ['more', '⋯']];
+  $('nav').innerHTML = tabs.map(([k, l]) => `<button data-v="${k}" class="${k === cur ? 'on' : ''}">${l}</button>`).join('');
+  $('nav').querySelectorAll('button').forEach(b => b.onclick = () => {
+    cur = b.dataset.v; $('nav').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    tabs.forEach(([k]) => $('v-' + k).hidden = k !== cur); render(); });
+  wireAC($('pname'), $('ac'), pid => loadPlayer(pid));
+  const bump = n => setBid({amt: Math.max(1, (+S.bid.amt || 0) + n)});
+  $('m1').onclick = () => bump(-1); $('p1').onclick = () => bump(1); $('p5').onclick = () => bump(5);
+  $('amt').onchange = e => setBid({amt: e.target.value === '' ? null : +e.target.value});
+  $('chips').onclick = e => { const c = e.target.closest('.chip'); if (c) setBid({slot: +c.dataset.slot}); };
+  $('clr').onclick = clearBid;
+  $('ibid').onclick = () => { const a = $('ibid').dataset.amt; if (!S.bid.pid) return; setBid({amt: a ? +a : S.bid.amt, slot: S.meSlot}); };
+  $('sold').onclick = () => {
+    const b = S.bid; if (!b.pid) return toast('No player on the block.');
+    if (b.slot == null || b.amt == null) return toast('Enter the high bid and team first.');
+    const pid = b.pid; recordSale(pid, b.slot, b.amt); clearBid(); render();
+    toast(`Sold: ${esc(P(pid).name)} → ${esc(tname(S.sales[pid].slot))} $${S.sales[pid].price}. <u id="tedit">Edit</u>`);
+    const te = document.getElementById('tedit'); if (te) te.onclick = () => { editPid = pid; $('nav').querySelector('[data-v=sales]').click(); };
+  };
+  setInterval(() => { if (S.bid.pid) renderCard(); else renderBadges(); }, 5000);
+}
+
+// ---------- self-test (?test=1) ----------
+function selfTest() {
+  const out = [], ok = (name, cond, got) => out.push([name, !!cond, got]);
+  const ps = PLAYERS, slotsT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], me = 1, names = s => s == me ? 'Me' : 'Team ' + s;
+  const find = n => ps.find(p => p.name.startsWith(n));
+  let L = leagueState(ps, slotsT, me, {});
+  const tot = ps.reduce((s, p) => s + p.val, 0);
+  ok('Fresh: $ sums to 1650±1, inflation 1.00, every max bid $152', Math.abs(tot - 1650) <= 1 && Math.abs(L.inflation - 1) < 0.005 && slotsT.every(s => L.t[s].maxBid === 152), `sum ${tot.toFixed(1)}, infl ${L.inflation.toFixed(3)}`);
+  const J = find('Nikola Jok'), W = find('Victor Wemb');
+  L = leagueState(ps, slotsT, me, {[J.id]: {slot: 1, price: 60}, [W.id]: {slot: 2, price: 70}});
+  ok('Jokić $60 me + Wemby $70 Team 2: $1520 left, 138 spots, my max $93, T2 max $83, infl ≈0.99', L.left === 1520 && L.spots === 138 && L.me.maxBid === 93 && L.t[2].maxBid === 83 && Math.abs(L.inflation - 0.99) <= 0.01, `left ${L.left}, spots ${L.spots}, me ${L.me.maxBid}, T2 ${L.t[2].maxBid}, infl ${L.inflation.toFixed(3)}`);
+  // Synthetic league state for bid-card rows: force my max via a stub player and mult.
+  const stub = (mx, hi1) => ({L: Object.assign({}, leagueState(ps, slotsT, me, {}), {mult: 1, pm: 0, hi1, lateStage: false}), p: {val: mx, edge: 1, mkt: mx, pos: ['PG'], fpg: 30, sigma: 10}});
+  let x = stub(29, 152); let d = decide(x.p, {amt: 20, slot: 3}, x.L, names); ok('My max $29, $20 by Team 3 → BID $21', d.action === 'BID' && d.amt === 21, `${d.action} ${d.amt}`);
+  d = decide(x.p, {amt: 29, slot: 3}, x.L, names); ok('Same, $29 by Team 3 → STOP', d.action === 'STOP', d.action);
+  d = decide(x.p, {amt: 24, slot: me}, x.L, names); ok('Same, $24 by Me → HOLD', d.action === 'HOLD', d.action);
+  x = stub(29, 12); d = decide(x.p, {amt: 5, slot: 3}, x.L, names);
+  ok('My max $29, top opponent max $12, $5 by Team 3 → BID $13 + note', d.action === 'BID' && d.amt === 13 && d.notes.some(n => n.includes('only you can go above $12')), `${d.action} ${d.amt} ${d.notes.join('|')}`);
+  x = stub(29, 40); ok('Target, my max $29, top opp max $40 → open $1', openingBid({edge: 5, mkt: 10}, 29, x.L).amt === 1, openingBid({edge: 5}, 29, x.L).amt);
+  ok('Drain, market $30, my max $18 → open $18', openingBid({edge: -5, mkt: 30}, 18, x.L).amt === 18, openingBid({edge: -5, mkt: 30}, 18, x.L).amt);
+  ok('Bid input older than 20 s → "update current bid" prompt', isStale({amt: 20, ts: 0}, 21000) && !isStale({amt: 20, ts: 0}, 19000), '21 s stale, 19 s fresh');
+  const D = defaultState(); ok('Offline default: 10 teams, $165 each, "Me" present', Object.keys(D.teams).length === 10 && Object.values(D.teams).some(t => t.name === 'Me') && slotsT.every(s => teamStats(slotsT, {})[s].left === 165), 'default teams');
+  L = leagueState(ps, slotsT, me, {[J.id]: {slot: me, price: 60}});
+  ok('Offline SOLD Jokić $60 by Me → my $105 left, 13 spots, max $93, inflation recomputes', L.me.left === 105 && L.me.spots === 13 && L.me.maxBid === 93 && Math.abs(L.inflation - 1) > 0.001, `left ${L.me.left}, spots ${L.me.spots}, max ${L.me.maxBid}, infl ${L.inflation.toFixed(3)}`);
+  const sales = {[J.id]: {slot: 3, price: 55, src: 'manual', ts: 1}};
+  const rc = reconcile(sales, [{player_id: J.id, slot: 4, price: 61}]); reconcile(sales, [{player_id: J.id, slot: 4, price: 61}]);
+  ok('Manual sale then API differs → API wins, warning, no double count', sales[J.id].price === 61 && sales[J.id].slot === 4 && rc.warn.length === 1 && Object.keys(sales).length === 1, JSON.stringify(sales[J.id]));
+  const seq = [1, 2, 3, 4, 5, 6].map(f => backoffDelay(f)); ok('Polling fails → back off 5→10→20→30 s and keep retrying', backoffDelay(0) === 5 && seq.join() === '10,20,30,30,30,30', '5,' + seq.join());
+  const mem = {}; const st = {getItem: k => mem[k] ?? null, setItem: (k, v) => mem[k] = v};
+  const S0 = defaultState(); S0.sales[J.id] = {slot: 2, price: 60, src: 'manual', ts: 5}; S0.teams[2].name = 'Renamed'; S0.bid = {pid: W.id, amt: 30, slot: 3, ts: 9};
+  st.setItem('k', JSON.stringify(S0)); const S1 = JSON.parse(st.getItem('k'));
+  ok('Reload mid-draft → sales, team names, bid input restored', S1.sales[J.id].price === 60 && S1.teams[2].name === 'Renamed' && S1.bid.amt === 30, 'JSON round trip');
+  // Late-stage bonus: me with $4 per spot or less, Out player on the block.
+  const lateSales = {}; let k = 0; const filler = ps.slice(150);
+  for (let i = 0; i < 10; i++) lateSales[filler[k++].id] = {slot: me, price: 15}; // $150 spent, 4 spots, $15 left
+  L = leagueState(ps, slotsT, me, lateSales);
+  const inj = Object.assign({}, ps.find(p => p.val > 1 && !lateSales[p.id]), {injury: 'Out', upside: false, yexp: 3});
+  const m = myMax(inj, L); d = decide(inj, {amt: null, slot: null}, L, names);
+  ok('$ per open spot < $4, injured player → max includes late bonus, reason says so', L.lateStage && m.bonus >= 1 && reasonLine(inj, d, L).includes('late bonus'), `$/spot ${(L.me.left / L.me.spots).toFixed(2)}, bonus ${m.bonus}`);
+  // Personal multiplier row (from Alex).
+  const vals = [14, 10, 8, 5, 4, 3, 3, 2, 2, 2];
+  const pool = vals.map((v, i) => ({id: 'f' + i, val: v, pos: ['PG'], injury: '', yexp: 3, upside: false}))
+    .concat([...Array(9)].map((_, i) => ({id: 'b' + i, val: 0, pos: ['PG']})));
+  const bought = {}; [105, 0, 0, 0, 0, 0, 0, 0, 0].forEach((pr, i) => bought['b' + i] = {slot: 1, price: pr}); // $60 left, 5 spots → spendable $55
+  const Lr = leagueState(pool, [1, 2], 1, bought), Lq = Object.assign({}, Lr, {inflation: 0.90, mult: Math.max(0.90, Lr.pm)});
+  const m14 = myMax(pool[0], Lq).max;
+  ok('Spendable $55, 5 spots, infl 0.90, top-10 values 14…2 → multiplier 1.28, max for $14 player $18', Lr.mySpendable === 55 && Lr.pm.toFixed(2) === '1.28' && m14 === 18, `spendable ${Lr.mySpendable}, pm ${Lr.pm.toFixed(3)}, max ${m14}`);
+  document.body.innerHTML = `<section><h2>Self-test: ${out.filter(r => r[1]).length}/${out.length} pass</h2>${out.map(([n, p, g]) => `<div class="card"><span class="${p ? 'pass' : 'fail'}">${p ? 'PASS' : 'FAIL'}</span> ${esc(n)}<br><span class="small mut">${esc(g)}</span></div>`).join('')}<p><a href="./">back to board</a></p></section>`;
+  document.title = `Self-test ${out.filter(r => r[1]).length}/${out.length}`;
+}
+
+// ---------- boot ----------
+(async function boot() {
+  let text = null;
+  try { const r = await fetch('seed_values.csv', {cache: 'no-cache'}); if (!r.ok) throw 0; text = await r.text(); store.setItem('lockin:seed', text); }
+  catch (e) { text = store.getItem('lockin:seed'); }
+  if (!text) { document.body.innerHTML = '<p style="padding:20px">Could not load seed_values.csv and no cached copy.</p>'; return; }
+  PLAYERS = valuate(parseSeed(text));
+  PLAYERS.forEach(p => { BYID[p.id] = p; p._k = p.name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); });
+  if (Q.get('test')) return selfTest();
+  S = loadState();
+  Object.values(S.extra).forEach(p => p._k = p.name.toLowerCase());
+  if (S.bid.pid) $('pname').value = P(S.bid.pid).name;
+  wire(); render();
+  await loadLeague();
+  poll();
+})();
+</script>
+</body>
+</html>
