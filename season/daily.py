@@ -21,6 +21,7 @@ GAIN_FA = 2.0       # points per week: free agent, no claim needed
 GAIN_CLAIM = 4.0    # points per week: player on waivers, costs priority
 GAIN_SWAP = 3.0     # points: bench swap
 NEXT_WEEK = 0.5     # weight of next week's value in waiver math
+COIN_FLIP = 2.0     # points: a starter this close to his bench alternative gets an asterisk
 MIX = 0.5           # weight of Sleeper's game-by-game projection in this week's expected points
 
 
@@ -216,6 +217,14 @@ def main():
         R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot, chance=chance, tilt=tilt,
                             their_top=sorted(((B[p]['name'], e_week(p)) for p in opicks.values()), key=lambda x: -x[1])[:3])
 
+    # Coin flips: a starter whose place in the lineup is worth less than COIN_FLIP points.
+    flips = {}
+    for pid in picks.values():
+        t2, p2 = lineup.best_lineup([r for r in rows if r[0] != pid])
+        if tot - t2 < COIN_FLIP:
+            other = next(iter(set(p2.values()) - set(picks.values())), None)
+            flips[pid] = dict(other=B[other]['name'] if other else '?', other_v=value_now(other) if other else 0, margin=tot - t2)
+
     starters_now = (mine.get('starters') or [])[:len(lineup.SLOTS)]
     R['lineup'] = []
     for i, s in enumerate(lineup.SLOTS):
@@ -223,12 +232,13 @@ def main():
         b = B.get(pid, {})
         R['lineup'].append(dict(slot=s, pid=pid, name=b.get('name', '—'), value=value_now(pid) if pid else 0,
                                 games=len(left.get(b.get('team'), [])), mu=week_avg(pid) if pid else 0, a=b.get('a', 0),
-                                injury=b.get('injury', ''), now=B.get(starters_now[i], {}).get('name') if i < len(starters_now) else None))
+                                injury=b.get('injury', ''), flip=flips.get(pid), now=B.get(starters_now[i], {}).get('name') if i < len(starters_now) else None))
     bench = [pid for pid in my_ids if pid not in picks.values()]
     R['bench'] = [dict(name=B[p]['name'], value=value_now(p), games=len(left.get(B[p]['team'], [])), mu=week_avg(p),
                        injury=B[p]['injury'], ir=p in reserve) for p in bench]
     R['bench'].sort(key=lambda x: -x['value'])
-    R['changes'] = [(B[a]['name'] if a in B else a) for a in set(starters_now) - set(picks.values())]
+    R['changes'] = [(B[a]['name'] if a in B else a) for a in set(starters_now) - set(picks.values()) if a != '0']
+    R['empty'] = [lineup.SLOTS[i] for i, a in enumerate(starters_now) if a == '0']
     R['changes_in'] = [B[p]['name'] for p in set(picks.values()) - set(starters_now)]
 
     # ---------- player cards (model view) ----------

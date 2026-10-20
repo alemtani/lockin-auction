@@ -114,11 +114,22 @@ def render(R):
     rows = []
     for x in R['lineup']:
         note = ', '.join(filter(None, [x['injury'], f"plays {x['a']:.0%} of games" if x['a'] < 0.75 else '']))
-        rows.append([x['slot'], x['name'], x['games'], f"{x['value']:.1f}", f"{x['mu']:.1f}", note])
+        rows.append([x['slot'], x['name'] + ('*' if x['flip'] else ''), x['games'], f"{x['value']:.1f}", f"{x['mu']:.1f}", note])
     D.table(['Slot', 'Player', 'Games', 'Week score', 'Per game', 'Note'], rows)
+    by_other = {}
+    for x in R['lineup']:
+        if x['flip']:
+            by_other.setdefault((x['flip']['other'], x['flip']['other_v']), []).append(x)
+    for (other, ov), xs in by_other.items():
+        close = ', '.join(f"{x['name']} {x['value']:.1f} ({x['flip']['margin']:.1f} apart)" for x in sorted(xs, key=lambda x: x['flip']['margin']))
+        D.para(f"* Coin flip vs {other} ({ov:.1f}, bench): {close}. News or minutes can change these. "
+               "The daily email rechecks and says if one flips.", muted=True)
+    if R.get('empty'):
+        D.para(f"Warning: your Sleeper lineup has an empty slot ({', '.join(R['empty'])}). An empty slot scores 0.",
+               f"<b>Warning: your Sleeper lineup has an empty slot ({H.escape(', '.join(R['empty']))}).</b> An empty slot scores 0.")
     if R['changes_in']:
-        D.para(f"Change in Sleeper: start {', '.join(R['changes_in'])}; bench {', '.join(R['changes'])}.",
-               f"<b>Change in Sleeper:</b> start {H.escape(', '.join(R['changes_in']))}; bench {H.escape(', '.join(R['changes']))}.")
+        txt = f"start {', '.join(R['changes_in'])}" + (f"; bench {', '.join(R['changes'])}" if R['changes'] else '')
+        D.para(f"Change in Sleeper: {txt}.", f"<b>Change in Sleeper:</b> {H.escape(txt)}.")
     else:
         D.para('Your Sleeper lineup already matches.')
     if R['bench']:
