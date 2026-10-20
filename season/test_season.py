@@ -51,6 +51,16 @@ class LockInMath(unittest.TestCase):
         self.assertAlmostEqual(starter, 30, delta=0.05)
         self.assertAlmostEqual(lineup.swap_gain(starter, bench), 8.9, delta=0.1)
 
+    def test_per_game_means(self):
+        # Same mean for every game gives the old answer; one weak game lands between 2 and 3 good games.
+        self.assertAlmostEqual(model.LockIn(35, 11, 1.0, 3, [35, 35, 35]).week_value(), model.LockIn(35, 11, 1.0, 3).week_value())
+        two, three = model.LockIn(35, 11, 1.0, 2).week_value(), model.LockIn(35, 11, 1.0, 3).week_value()
+        for mus in ([25, 35, 35], [35, 25, 35], [35, 35, 25]):
+            self.assertTrue(two < model.LockIn(35, 11, 1.0, 3, mus).week_value() < three, mus)
+
+    def test_week_mus_mix(self):
+        self.assertEqual(model.week_mus(35, [29, None, 31]), [32, 35, 33])
+
     def test_simulation_matches_exact(self):
         lk = model.LockIn(40, 12, 0.8, 4)
         xs = lk.simulate(20000)

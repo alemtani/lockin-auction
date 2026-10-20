@@ -21,6 +21,7 @@ GAIN_FA = 2.0       # points per week: free agent, no claim needed
 GAIN_CLAIM = 4.0    # points per week: player on waivers, costs priority
 GAIN_SWAP = 3.0     # points: bench swap
 NEXT_WEEK = 0.5     # weight of next week's value in waiver math
+MIX = 0.5           # weight of Sleeper's game-by-game projection in this week's expected points
 
 
 def today_pt():
@@ -53,6 +54,8 @@ def team_games(sched, week=None, after=None, before=None, finished=False):
             continue
         for side in ('home', 'away'):
             out[g[side]['team']].append(g['date'])
+    for v in out.values():
+        v.sort()
     return out
 
 
@@ -129,13 +132,31 @@ def main():
     nxt = team_games(sched, week=week + 1)
     this_week = team_games(sched, week=week)
 
-    def lock(pid, n):
-        b = B[pid]
-        return model.LockIn(b['mu'], b['sigma'], b['a'], n)
+    # Sleeper's game-by-game projections, scored with league settings: (pid, date) -> points.
+    sl_proj = {}
+    for w in (week, week + 1):
+        try:
+            rows = fetch.week_projection(w)
+        except Exception as e:
+            print(f'projections week {w}: {e}', file=sys.stderr)
+            continue
+        for r in rows:
+            st = r.get('stats') or {}
+            if r.get('date') and st.get('sp'):
+                sl_proj[r['player_id'], r['date']] = model.fantasy_points(st, scoring) + scoring.get('pf', 0) * model.PF_PER_MIN * st['sp'] / 60
 
-    def e_week(pid, n=None, **kw):
-        n = len(left.get(B[pid]['team'], [])) if n is None else n
-        return lock(pid, n).week_value(n, **kw) if n else (kw.get('current') or 0.0)
+    def lock(pid, dates):
+        b = B[pid]
+        mus = model.week_mus(b['mu'], [sl_proj.get((pid, d)) for d in dates], MIX)
+        return model.LockIn(b['mu'], b['sigma'], b['a'], len(dates), mus)
+
+    def week_avg(pid):
+        dates = left.get(B[pid]['team'], [])
+        return sum(lock(pid, dates).mus) / len(dates) if dates else B[pid]['mu']
+
+    def e_week(pid, **kw):
+        dates = left.get(B[pid]['team'], [])
+        return lock(pid, dates).week_value(**kw) if dates else (kw.get('current') or 0.0)
 
     rosters = {r['roster_id']: r for r in L['rosters']}
     users = {u['user_id']: (u.get('metadata') or {}).get('team_name') or u['display_name'] for u in L['users']}
@@ -170,11 +191,11 @@ def main():
     def lineup_rows(ids, val):
         return [(pid, B[pid]['pos'], val(pid)) for pid in ids if pid not in reserve and pid in B]
 
-    def spread(pid, n=None):
-        n = len(left.get(B[pid]['team'], [])) if n is None else n
-        if not n:
+    def spread(pid):
+        dates = left.get(B[pid]['team'], [])
+        if not dates:
             return 0.0
-        xs = lock(pid, n).simulate(1500)
+        xs = lock(pid, dates).simulate(1500)
         m = sum(xs) / len(xs)
         return sum((x - m) ** 2 for x in xs) / len(xs)
 
@@ -201,10 +222,10 @@ def main():
         pid = picks.get(i)
         b = B.get(pid, {})
         R['lineup'].append(dict(slot=s, pid=pid, name=b.get('name', '—'), value=value_now(pid) if pid else 0,
-                                games=len(left.get(b.get('team'), [])), mu=b.get('mu', 0), a=b.get('a', 0),
+                                games=len(left.get(b.get('team'), [])), mu=week_avg(pid) if pid else 0, a=b.get('a', 0),
                                 injury=b.get('injury', ''), now=B.get(starters_now[i], {}).get('name') if i < len(starters_now) else None))
     bench = [pid for pid in my_ids if pid not in picks.values()]
-    R['bench'] = [dict(name=B[p]['name'], value=value_now(p), games=len(left.get(B[p]['team'], [])), mu=B[p]['mu'],
+    R['bench'] = [dict(name=B[p]['name'], value=value_now(p), games=len(left.get(B[p]['team'], [])), mu=week_avg(p),
                        injury=B[p]['injury'], ir=p in reserve) for p in bench]
     R['bench'].sort(key=lambda x: -x['value'])
     R['changes'] = [(B[a]['name'] if a in B else a) for a in set(starters_now) - set(picks.values())]
@@ -222,8 +243,8 @@ def main():
     def wval(pid):
         t = B[pid]['team']
         v = e_week(pid)
-        nn = len(nxt.get(t, []))
-        return v + NEXT_WEEK * (lock(pid, nn).week_value(nn) if nn else 0)
+        nd = nxt.get(t, [])
+        return v + NEXT_WEEK * (lock(pid, nd).week_value() if nd else 0)
 
     run_waivers = mode == 'monday' or datetime.date.fromisoformat(day).weekday() == 3
     if run_waivers:
@@ -267,7 +288,7 @@ def main():
                 continue
             b, wg = B[pid], week_games[pid]
             r = len(left.get(b['team'], []))
-            lk = lock(pid, r + 1)
+            lk = lock(pid, [yday] + left.get(b['team'], []))
             thr = lk.threshold(r) if r else None
             started = pid in starters_now
             call = 'FINAL' if not r else 'LOCKED' if wg['locked'] else 'LOCK' if g['fp'] >= thr else 'KEEP ROLLING'

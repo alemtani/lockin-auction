@@ -46,7 +46,10 @@ def prior_from_seed(r, minutes):
         tau *= 1.3  # injury history: the projection is less sure
     if abs(int(r['adp_rank'] or 0) - int(r['rank'])) > 40:
         tau *= 1.3  # the draft market disagreed with our seed: less sure
-    return dict(fpg=fpg, sigma=sigma, tau=tau, a=min(0.98, int(r['proj_gp']) / 82),
+    gp = int(r['proj_gp'])
+    if r.get('espn_gp'):  # ESPN's games played: alone when the seed only guessed, else the average
+        gp = int(r['espn_gp']) if 'GP guessed' in r.get('flags', '') else (gp + int(r['espn_gp'])) / 2
+    return dict(fpg=fpg, sigma=sigma, tau=tau, a=min(0.98, gp / 82),
                 minutes=minutes or max(10.0, fpg), src='seed')
 
 
@@ -115,15 +118,22 @@ _W = [x / sum(_W) for x in _W]
 class LockIn:
     """Optimal lock policy for one player for one week.
 
+    mus: expected points for each game left, in date order (or one mu for all games).
     eu[r] = expected final score if a game was just played and r more games are left,
             before you know that game's score (so you can still lock it).
     """
 
-    def __init__(self, mu, sigma, a, games):
+    def __init__(self, mu, sigma, a, games, mus=None):
+        self.mus = list(mus) if mus else [mu] * games
         self.mu, self.sigma, self.a, self.games = mu, sigma, a, games
-        self.eu = [mu]
+        self.eu = [self.game_mu(0)]
         for r in range(1, games):
-            self.eu.append(sum(w * self.after_game(mu + sigma * z, r) for z, w in zip(_Z, _W)))
+            m = self.game_mu(r)
+            self.eu.append(sum(w * self.after_game(m + sigma * z, r) for z, w in zip(_Z, _W)))
+
+    def game_mu(self, r):
+        """Expected points of the game that has r games after it."""
+        return self.mus[self.games - 1 - r]
 
     def after_game(self, x, r):
         """Best expected result holding score x (unlocked) with r games left."""
@@ -156,11 +166,20 @@ class LockIn:
             for g in range(self.games):
                 left = self.games - g - 1
                 if rng.random() < self.a:
-                    x = rng.gauss(self.mu, self.sigma)
+                    x = rng.gauss(self.mus[g], self.sigma)
                 if x is not None and left > 0 and x >= self.threshold(left):
                     break
             out.append(x if x is not None else 0.0)
         return out
+
+
+def week_mus(belief_mu, sleeper_mus, mix=0.5):
+    """Expected points per game for this week: mix of our belief and Sleeper's game-by-game projection.
+
+    Sleeper's numbers know about minutes limits and rest; ours know about this season's real games.
+    sleeper_mus: one per game left (None where Sleeper has no projection).
+    """
+    return [belief_mu if s is None else (1 - mix) * belief_mu + mix * s for s in sleeper_mus]
 
 
 def best_of_c(r):

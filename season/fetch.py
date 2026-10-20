@@ -53,3 +53,8 @@ def week_stats(week, final=False):
     """Game-by-game stat lines for one week. A finished week never changes, so keep it."""
     return get(f'https://api.sleeper.com/stats/nba/{SEASON}/{week}?season_type=regular',
                f'stats_week_{week}.json', refresh=not final)
+
+
+def week_projection(week):
+    """Game-by-game projections for one week (RotoWire via Sleeper)."""
+    return get(f'https://api.sleeper.com/projections/nba/{SEASON}/{week}?season_type=regular', f'proj_week_{week}.json')

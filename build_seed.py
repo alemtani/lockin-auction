@@ -67,6 +67,14 @@ def espn_stats(entry):
     return st
 
 
+def espn_gp(entry):
+    """ESPN's projected games played for 2026-27, or ''."""
+    for s in entry['player'].get('stats', []):
+        if s.get('id') == '102027' and (s.get('averageStats') or {}).get('42'):
+            return round(s['averageStats']['42'])
+    return ''
+
+
 def main():
     if '--fetch' in sys.argv:
         fetch()
@@ -123,11 +131,12 @@ def main():
             espn_fpg='' if espn_fpg is None else round(espn_fpg, 1),
             last_fpg=r['last_fpg'], last_gp=r['last_gp'], sigma=round(sigma, 1), proj_gp=r['proj_gp'],
             weekly=round(weekly(fpg, sigma, a), 1), adp_rank=r['adp_rank'], sleeper_id=sid,
-            years_exp=p.get('years_exp', ''), injury=p.get('injury_status') or '', flags='; '.join(flags)))
+            years_exp=p.get('years_exp', ''), injury=p.get('injury_status') or '', flags='; '.join(flags),
+            espn_gp=espn_gp(e) if e else ''))
 
     out.sort(key=lambda x: -x['weekly'])
     cols = ['rank', 'name', 'pos', 'team', 'fpg', 'rw_fpg', 'espn_fpg', 'last_fpg', 'last_gp', 'sigma',
-            'proj_gp', 'weekly', 'adp_rank', 'sleeper_id', 'years_exp', 'injury', 'flags']
+            'proj_gp', 'weekly', 'adp_rank', 'sleeper_id', 'years_exp', 'injury', 'flags', 'espn_gp']
     with open('seed_values.csv', 'w', newline='') as f:
         w = csv.DictWriter(f, cols, delimiter='|', lineterminator='\n')
         w.writeheader()
