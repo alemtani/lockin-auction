@@ -1,0 +1,26 @@
+name: daily email
+on:
+  schedule:
+    - cron: '0 15 * * *'   # 8:00 PDT / 7:00 PST, after last night's games are final
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover season
+      - run: python3 season/daily.py --send
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      - name: Save the model history
+        run: |
+          git config user.name 'lockin-bot'
+          git config user.email 'lockin-bot@users.noreply.github.com'
+          git add data/season
+          git diff --cached --quiet || git commit -m "Daily model update $(date -u +%F)"
+          git push
