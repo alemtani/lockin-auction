@@ -1,5 +1,5 @@
 """Download what the daily run needs from Sleeper. Saves raw JSON under data/season/raw/."""
-import json, os, urllib.request
+import json, os, time, urllib.request
 
 LEAGUE = '1411220743328387072'
 ME = '872689087335858176'  # Sleeper user_id of alemtani
@@ -11,7 +11,9 @@ def get(url, path=None, refresh=True):
     path = path and os.path.join(RAW, path)
     if path and os.path.exists(path) and not refresh:
         return json.load(open(path))
-    req = urllib.request.Request(url, headers={'User-Agent': 'lockin-season'})
+    if refresh:  # Sleeper's server can return an old copy; ask for a fresh one
+        url += ('&' if '?' in url else '?') + f't={int(time.time())}'
+    req = urllib.request.Request(url, headers={'User-Agent': 'lockin-season', 'Cache-Control': 'no-cache'})
     with urllib.request.urlopen(req, timeout=60) as r:
         data = r.read()
     if path:
