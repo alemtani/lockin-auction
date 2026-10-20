@@ -1,0 +1,49 @@
+Lock-In week 1: lineup + pickups (Tue 10/20–Sun 10/25)
+
+Week 1 vs 2 peas ina Podz (<3 Podz): you 369, them 322 (expected). Win chance 77%.
+
+BEST LINEUP THIS WEEK
+Slot  Player            Games  Week score  Per game  Note              
+PG    Kyrie Irving*     3      37.9        32.3      plays 72% of games
+SG    Austin Reaves     3      45.1        37.0                        
+G     Jamal Murray*     2      38.0        35.8                        
+SF    Kevin Durant      3      41.1        34.6                        
+PF    Anthony Davis     3      44.1        36.7                        
+F     Lauri Markkanen   3      39.2        33.7                        
+C     Domantas Sabonis  3      45.6        37.7                        
+UTIL  Darius Garland*   3      38.8        31.1                        
+UTIL  LaMelo Ball*      3      39.2        31.0                        
+* Coin flip vs Michael Porter (37.2, bench): Kyrie Irving 37.9 (0.7 apart), Jamal Murray 38.0 (0.8 apart), Darius Garland 38.8 (1.6 apart), LaMelo Ball 39.2 (2.0 apart). News or minutes can change these. The daily email rechecks and says if one flips.
+Your Sleeper lineup already matches.
+Bench: Michael Porter 37.2 (3g), Damian Lillard 33.2 (2g), Coby White 31.2 (3g, DTD), Jarrett Allen 30.1 (2g), Mikal Bridges 28.2 (3g)
+'Week score' = expected locked score for the week. It counts the games left and the chance he plays, so a 4-game player can beat a better 3-game player.
+You are the favorite: close calls go to steady players.
+Their best: Jalen Duren 42, Tyrese Haliburton 42, Jayson Tatum 39.
+
+WAIVER PICKUPS
+No move. No free agent beats your roster by enough. The closest:
+1. Add Day'Ron Sharpe (C BKN), drop Mikal Bridges: +0.0 per week (no gain: he would not crack your top 12).
+projected 22 per game, no games yet; 3 games left this week, 3 next; on waivers: a claim uses your priority
+2. Add Egor Dëmin (PG/SG BKN), drop Mikal Bridges: +0.0 per week (no gain: he would not crack your top 12).
+projected 21 per game, no games yet; 3 games left this week, 3 next
+3. Add Kevin Porter (PG/SG MIL), drop Mikal Bridges: +0.0 per week (no gain: he would not crack your top 12).
+projected 23 per game, no games yet; 3 games left this week, 3 next
+Gain = how much better your lineup gets this week (plus half of next week). A move needs +2 for a free agent, +4 if it costs waiver priority.
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player            Projected  Real avg  Games  Now   Trust real  50/50 at
+Anthony Davis     38.2       —         0      38.2  0%          7       
+Austin Reaves     37.4       —         0      37.4  0%          11      
+Domantas Sabonis  37.0       —         0      37.0  0%          7       
+Jamal Murray      36.5       —         0      36.5  0%          11      
+Kevin Durant      35.8       —         0      35.8  0%          11      
+Kyrie Irving      35.0       —         0      35.0  0%          4       
+Lauri Markkanen   34.0       —         0      34.0  0%          11      
+LaMelo Ball       32.6       —         0      32.6  0%          11      
+Damian Lillard    32.3       —         0      32.3  0%          4       
+Darius Garland    31.7       —         0      31.7  0%          11      
+Michael Porter    31.2       —         0      31.2  0%          11      
+Jarrett Allen     29.0       —         0      29.0  0%          9       
+Coby White        28.5       —         0      28.5  0%          11      
+Mikal Bridges     23.1       —         0      23.1  0%          7       
+'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
