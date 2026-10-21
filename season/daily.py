@@ -6,6 +6,7 @@
 
 Monday mode (the week's first game day, or earlier): lineup, matchup, waivers.
 Daily mode (other days): yesterday's games, lock calls, bench swaps.
+Waiver pickups: every day. Mid-week a move needs twice the Monday gain.
 """
 import argparse, csv, datetime, os, sys, zoneinfo
 from collections import defaultdict
@@ -256,36 +257,34 @@ def main():
         nd = nxt.get(t, [])
         return v + NEXT_WEEK * (lock(pid, nd).week_value() if nd else 0)
 
-    run_waivers = mode == 'monday' or datetime.date.fromisoformat(day).weekday() == 3
-    if run_waivers:
-        tx = []
-        try:
-            tx = fetch.get(f'https://api.sleeper.app/v1/league/{fetch.LEAGUE}/transactions/{week}', f'transactions_{week}.json')
-        except Exception:
-            pass
-        cutoff = (datetime.date.fromisoformat(day) - datetime.timedelta(days=2)).isoformat()
-        on_waivers = {pid for t in tx if t.get('drops') and datetime.datetime.fromtimestamp(t['created'] / 1000).date().isoformat() >= cutoff
-                      for pid in t['drops']}
-        fa = [pid for pid in B if pid not in rostered and B[pid]['injury'] not in ('Out', 'IR', 'Sus')]
-        fa_vals = sorted(((wval(p), p) for p in fa), reverse=True)[:FA_POOL]
-        mine_rows = [(pid, B[pid]['pos'], wval(pid)) for pid in my_ids if pid not in reserve]
-        drops = {p for _, p in sorted((v, pid) for pid, _, v in mine_rows)[:DROP_POOL]}
-        base = lineup.team_value(mine_rows)[0]
-        moves = []
-        for v, add in fa_vals:
-            best = None
-            for d in drops:
-                roster = [r for r in mine_rows if r[0] != d] + [(add, B[add]['pos'], v)]
-                g = lineup.team_value(roster)[0] - base
-                if best is None or g > best[0]:
-                    best = (g, d)
-            claim = add in on_waivers
-            need = (GAIN_CLAIM if claim else GAIN_FA) * (1 if mode == 'monday' else 2)
-            moves.append(dict(gain=best[0], add=card(add), drop=B[best[1]]['name'], claim=claim, ok=best[0] >= need,
-                              games=len(left.get(B[add]['team'], [])), games_next=len(nxt.get(B[add]['team'], [])),
-                              role_up=B[add]['n'] >= 3 and B[add]['recent_min'] and B[add]['recent_min'] >= 1.25 * ((priors.get(add) or {}).get('minutes') or 99)))
-        moves.sort(key=lambda m: -m['gain'])
-        R['waivers'] = moves[:3]
+    tx = []
+    try:
+        tx = fetch.get(f'https://api.sleeper.app/v1/league/{fetch.LEAGUE}/transactions/{week}', f'transactions_{week}.json')
+    except Exception:
+        pass
+    cutoff = (datetime.date.fromisoformat(day) - datetime.timedelta(days=2)).isoformat()
+    on_waivers = {pid for t in tx if t.get('drops') and datetime.datetime.fromtimestamp(t['created'] / 1000).date().isoformat() >= cutoff
+                  for pid in t['drops']}
+    fa = [pid for pid in B if pid not in rostered and B[pid]['injury'] not in ('Out', 'IR', 'Sus')]
+    fa_vals = sorted(((wval(p), p) for p in fa), reverse=True)[:FA_POOL]
+    mine_rows = [(pid, B[pid]['pos'], wval(pid)) for pid in my_ids if pid not in reserve]
+    drops = {p for _, p in sorted((v, pid) for pid, _, v in mine_rows)[:DROP_POOL]}
+    base = lineup.team_value(mine_rows)[0]
+    moves = []
+    for v, add in fa_vals:
+        best = None
+        for d in drops:
+            roster = [r for r in mine_rows if r[0] != d] + [(add, B[add]['pos'], v)]
+            g = lineup.team_value(roster)[0] - base
+            if best is None or g > best[0]:
+                best = (g, d)
+        claim = add in on_waivers
+        need = (GAIN_CLAIM if claim else GAIN_FA) * (1 if mode == 'monday' else 2)
+        moves.append(dict(gain=best[0], add=card(add), drop=B[best[1]]['name'], claim=claim, ok=best[0] >= need,
+                          games=len(left.get(B[add]['team'], [])), games_next=len(nxt.get(B[add]['team'], [])),
+                          role_up=B[add]['n'] >= 3 and B[add]['recent_min'] and B[add]['recent_min'] >= 1.25 * ((priors.get(add) or {}).get('minutes') or 99)))
+    moves.sort(key=lambda m: -m['gain'])
+    R['waivers'] = moves[:3]
 
     # ---------- daily: yesterday, lock calls, swaps ----------
     if mode == 'daily':

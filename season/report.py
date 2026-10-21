@@ -152,7 +152,8 @@ def render(R):
             D.para(f"{i + 1}. Add {w['add']['name']} ({w['add']['pos']} {w['add']['team']}), drop {w['drop']}: +{w['gain']:.1f} per week{tag}.",
                    f"<b>{i + 1}. Add {H.escape(w['add']['name'])}</b> ({H.escape(w['add']['pos'])} {H.escape(w['add']['team'])}), drop {H.escape(w['drop'])}: <b>+{w['gain']:.1f}</b> per week{tag}.")
             D.para(why_pickup(w), muted=True)
-        D.para("Gain = how much better your lineup gets this week (plus half of next week). A move needs +2 for a free agent, +4 if it costs waiver priority.", muted=True)
+        bar = "+2 for a free agent, +4 if it costs waiver priority" if R['mode'] == 'monday' else "+4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week)"
+        D.para(f"Gain = how much better your lineup gets this week (plus half of next week). A move needs {bar}.", muted=True)
 
     if R.get('movers'):
         D.head('Outlook changes this week')

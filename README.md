@@ -22,7 +22,7 @@ Phone draft board for a 10-team Sleeper auction (Lock-In mode, $165 budget). For
 
 ## Season (Phase 2)
 
-A daily email at 8:00 PT. On Monday (or the week's first game day): best lineup, matchup, waiver pickups. On other days: last night's games, lock calls, bench swaps.
+A daily email at 5:00 PT. On Monday (or the week's first game day): best lineup, matchup, waiver pickups. On other days: last night's games, lock calls, bench swaps, waiver pickups. Mid-week a pickup needs twice the Monday gain.
 
 - `season/daily.py`: the daily run. `--dry-run` prints the email. `--date YYYY-MM-DD` replays a day. `--send` emails it (needs `GMAIL_APP_PASSWORD`).
 - `season/model.py`: each player starts at his projection and moves toward his real games. Steady veterans take about 11 games to reach 50/50; uncertain players switch faster.
