@@ -1,9 +1,10 @@
 name: daily email
 on:
   schedule:
-    # GitHub often starts scheduled runs late, most of all on the hour.
-    # Ask for 7:17 PDT / 6:17 PST so a late start still lands before 8.
-    - cron: '17 14 * * *'
+    # Cron is UTC only, so ask for both 5am PDT (12:00) and 5am PST (13:00).
+    # The check below drops the run that lands before 5am or after the day's send.
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -15,9 +16,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Skip if today's email already went out
+      - name: Skip if before 5am PT or today's email already went out
         id: sent
-        run: test -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" && echo done=1 >> "$GITHUB_OUTPUT" || true
+        run: |
+          if [ "${{ github.event_name }}" = schedule ] && [ "$(TZ=America/Los_Angeles date +%H)" -lt 5 ]; then
+            echo done=1 >> "$GITHUB_OUTPUT"
+          elif [ -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" ]; then
+            echo done=1 >> "$GITHUB_OUTPUT"
+          fi
       - run: python3 -m unittest discover season
         if: steps.sent.outputs.done != '1'
       - run: python3 season/daily.py --send
