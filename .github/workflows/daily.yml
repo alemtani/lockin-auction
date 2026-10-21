@@ -1,11 +1,11 @@
 name: daily email
 on:
   schedule:
-    # cron-job.org starts the run at 12:00am PT. This is the backup.
-    # Cron is UTC only, so ask for both 12:12am PDT (07:12) and 12:12am PST (08:12).
-    # The check below drops the run that lands before midnight or after the day's send.
-    - cron: '12 7 * * *'
-    - cron: '12 8 * * *'
+    # cron-job.org starts the run at 3:00am PT. This is the backup.
+    # Cron is UTC only, so ask for both 3:12am PDT (10:12) and 3:12am PST (11:12).
+    # The check below drops the run that lands before 3am or after the day's send.
+    - cron: '12 10 * * *'
+    - cron: '12 11 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -17,10 +17,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Skip if before midnight PT or today's email already went out
+      - name: Skip if before 3am PT or today's email already went out
         id: sent
         run: |
-          if [ "${{ github.event_name }}" = schedule ] && [ "$(TZ=America/Los_Angeles date +%H)" -eq 23 ]; then
+          if [ "${{ github.event_name }}" = schedule ] && [ "$(TZ=America/Los_Angeles date +%H)" -lt 3 ]; then
             echo done=1 >> "$GITHUB_OUTPUT"
           elif [ -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" ]; then
             echo done=1 >> "$GITHUB_OUTPUT"
