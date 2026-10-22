@@ -51,6 +51,14 @@ class LockInMath(unittest.TestCase):
         self.assertAlmostEqual(starter, 30, delta=0.05)
         self.assertAlmostEqual(lineup.swap_gain(starter, bench), 8.9, delta=0.1)
 
+    def test_bench_game_does_not_count(self):
+        gs = [dict(date='mon', fp=30.0), dict(date='wed', fp=48.8)]
+        bench_wed = model.week_state(gs, 48.8, lambda d: d != 'wed')
+        self.assertEqual(bench_wed['current'], 30.0)
+        self.assertFalse(bench_wed['locked'])
+        self.assertIsNone(model.week_state(gs, 48.8, lambda d: False)['current'])
+        self.assertTrue(model.week_state(gs, 30.0, lambda d: True)['locked'])  # Sleeper shows Mon: he locked it
+
     def test_per_game_means(self):
         # Same mean for every game gives the old answer; one weak game lands between 2 and 3 good games.
         self.assertAlmostEqual(model.LockIn(35, 11, 1.0, 3, [35, 35, 35]).week_value(), model.LockIn(35, 11, 1.0, 3).week_value())

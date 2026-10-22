@@ -176,15 +176,26 @@ def main():
     mode = args.mode or ('monday' if day <= first_day or datetime.date.fromisoformat(day).weekday() == 0 else 'daily')
     R = dict(day=day, week=week, mode=mode, week_dates=weeks[week], me=users.get(fetch.ME, 'me'))
 
-    # Per player: this week's games so far, Sleeper's current score, locked or not.
+    # Who started last night: the lineup at run time (before you change it today). Kept per date,
+    # because only a game played from a starting slot counts or can be locked.
+    starters_now = (mine.get('starters') or [])[:len(lineup.SLOTS)]
+    yday = (datetime.date.fromisoformat(day) - datetime.timedelta(days=1)).isoformat()
+    sdir = f'{OUT}/starters'
+    os.makedirs(sdir, exist_ok=True)
+    if not args.date and not os.path.exists(f'{sdir}/{yday}.txt'):  # first run of the day wins; a replay never writes
+        open(f'{sdir}/{yday}.txt', 'w').write('\n'.join(starters_now) + '\n')
+    started_on = {}
+
+    def in_lineup(pid, date):
+        if date not in started_on:
+            f = f'{sdir}/{date}.txt'
+            started_on[date] = set(open(f).read().split()) if os.path.exists(f) else set(starters_now)  # no record: best guess
+        return pid in started_on[date]
+
+    # Per player: this week's started games so far, Sleeper's current score, locked or not.
     pts = (me_m.get('players_points') or {})
-    week_games = {}
-    for pid in my_ids:
-        gs = [g for g in games.get(pid, []) if g['date'] in weeks[week]]
-        cur = gs[-1]['fp'] if gs else None
-        sl = pts.get(pid)
-        locked = bool(gs) and sl is not None and abs(sl - gs[-1]['fp']) > 0.05 and any(abs(sl - g['fp']) <= 0.05 for g in gs)
-        week_games[pid] = dict(games=gs, current=sl if locked else cur, locked=locked, sleeper=sl)
+    week_games = {pid: model.week_state([g for g in games.get(pid, []) if g['date'] in weeks[week]], pts.get(pid),
+                                        lambda d, pid=pid: in_lineup(pid, d)) for pid in my_ids}
 
     def value_now(pid):
         wg = week_games.get(pid) or {}
@@ -226,7 +237,6 @@ def main():
             other = next(iter(set(p2.values()) - set(picks.values())), None)
             flips[pid] = dict(other=B[other]['name'] if other else '?', other_v=value_now(other) if other else 0, margin=tot - t2)
 
-    starters_now = (mine.get('starters') or [])[:len(lineup.SLOTS)]
     R['lineup'] = []
     for i, s in enumerate(lineup.SLOTS):
         pid = picks.get(i)
@@ -288,7 +298,6 @@ def main():
 
     # ---------- daily: yesterday, lock calls, swaps ----------
     if mode == 'daily':
-        yday = (datetime.date.fromisoformat(day) - datetime.timedelta(days=1)).isoformat()
         R['yesterday'] = yday
         res = []
         for pid in my_ids:
@@ -299,7 +308,7 @@ def main():
             r = len(left.get(b['team'], []))
             lk = lock(pid, [yday] + left.get(b['team'], []))
             thr = lk.threshold(r) if r else None
-            started = pid in starters_now
+            started = in_lineup(pid, yday)
             call = 'FINAL' if not r else 'LOCKED' if wg['locked'] else 'LOCK' if g['fp'] >= thr else 'KEEP ROLLING'
             res.append(dict(name=b['name'], fp=g['fp'], mu=b['mu'], sigma=b['sigma'], z=(g['fp'] - b['mu']) / b['sigma'],
                             min=g['min'], left=r, thr=thr, call=call if started else 'bench', started=started))

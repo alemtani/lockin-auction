@@ -173,6 +173,20 @@ class LockIn:
         return out
 
 
+def week_state(games, sleeper_pts, started):
+    """This week's score so far for one player.
+
+    games: his games this week, oldest first, each {'date', 'fp'}.
+    sleeper_pts: Sleeper's current points for him (None if missing).
+    started(date): True if he was in your lineup for that game. A bench game never counts and cannot be locked.
+    """
+    gs = [g for g in games if started(g['date'])]
+    cur = gs[-1]['fp'] if gs else None
+    sl = sleeper_pts
+    locked = bool(gs) and sl is not None and abs(sl - gs[-1]['fp']) > 0.05 and any(abs(sl - g['fp']) <= 0.05 for g in gs)
+    return dict(games=gs, current=sl if locked else cur, locked=locked, sleeper=sl)
+
+
 def week_mus(belief_mu, sleeper_mus, mix=0.5):
     """Expected points per game for this week: mix of our belief and Sleeper's game-by-game projection.
 
