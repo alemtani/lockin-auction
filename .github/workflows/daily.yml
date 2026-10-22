@@ -7,6 +7,11 @@ on:
     - cron: '12 10 * * *'
     - cron: '12 11 * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: Send again even if today's email already went out
+        type: boolean
+        default: false
 permissions:
   contents: write
 jobs:
@@ -22,7 +27,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = schedule ] && [ "$(TZ=America/Los_Angeles date +%H)" -lt 3 ]; then
             echo done=1 >> "$GITHUB_OUTPUT"
-          elif [ -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" ]; then
+          elif [ "${{ inputs.force }}" != true ] && [ -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" ]; then
             echo done=1 >> "$GITHUB_OUTPUT"
           fi
       - run: python3 -m unittest discover season
