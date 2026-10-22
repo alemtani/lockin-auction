@@ -45,7 +45,11 @@ def schedule():
 
 
 def season_projection():
-    """Per-game season projections (RotoWire via Sleeper). Same file build_seed.py uses."""
+    """Per-game season projections (RotoWire via Sleeper). Same file build_seed.py uses.
+
+    Frozen at draft time: every player starts from his preseason projection. Sleeper's live copy
+    is not safe overnight (at 3am PT on 10/22 it held last night's box scores).
+    """
     if os.path.exists('data/sleeper_proj.json'):
         return json.load(open('data/sleeper_proj.json'))
     return get(f'https://api.sleeper.com/projections/nba/{SEASON}?season_type=regular', 'sleeper_proj.json')
