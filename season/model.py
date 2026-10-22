@@ -21,6 +21,8 @@ K_AVAIL = 8        # games of prior weight for "chance he plays"
 HALF_LIFE = 40     # games: a game this old counts half
 HALF_LIFE_MIN = 5  # games: minutes follow the last ~week
 PF_PER_MIN = 0.07  # fouls per minute, for projections without fouls
+A_PROJECTED = 0.95  # chance he plays a game Sleeper gives him minutes in, with no injury tag
+A_SLEEPER_OUT = 0.1  # chance he plays a game Sleeper gives him 0 minutes in
 INJ_AVAIL = {'Out': 0.1, 'IR': 0.0, 'Sus': 0.0, 'DTD': 0.65, 'GTD': 0.65, 'Questionable': 0.6, 'Doubtful': 0.25}
 
 
@@ -119,12 +121,14 @@ class LockIn:
     """Optimal lock policy for one player for one week.
 
     mus: expected points for each game left, in date order (or one mu for all games).
+    avail: chance he plays each game left, in date order (or one a for all games).
     eu[r] = expected final score if a game was just played and r more games are left,
             before you know that game's score (so you can still lock it).
     """
 
-    def __init__(self, mu, sigma, a, games, mus=None):
+    def __init__(self, mu, sigma, a, games, mus=None, avail=None):
         self.mus = list(mus) if mus else [mu] * games
+        self.avail = list(avail) if avail else [a] * games
         self.mu, self.sigma, self.a, self.games = mu, sigma, a, games
         self.eu = [self.game_mu(0)]
         for r in range(1, games):
@@ -135,11 +139,16 @@ class LockIn:
         """Expected points of the game that has r games after it."""
         return self.mus[self.games - 1 - r]
 
+    def game_a(self, r):
+        """Chance he plays the game that has r games after it."""
+        return self.avail[self.games - 1 - r]
+
     def after_game(self, x, r):
         """Best expected result holding score x (unlocked) with r games left."""
         v = x
         for j in range(1, r + 1):  # build up from 1 game left to r games left
-            v = max(x, self.a * self.eu[j - 1] + (1 - self.a) * v)
+            a = self.game_a(j - 1)
+            v = max(x, a * self.eu[j - 1] + (1 - a) * v)
         return v
 
     def threshold(self, r):
@@ -155,7 +164,8 @@ class LockIn:
             return self.after_game(current, r)
         v = 0.0  # no game yet; if he never plays, the slot scores 0
         for j in range(1, r + 1):
-            v = self.a * self.eu[j - 1] + (1 - self.a) * v
+            a = self.game_a(j - 1)
+            v = a * self.eu[j - 1] + (1 - a) * v
         return v
 
     def simulate(self, n=3000, seed=1):
@@ -165,7 +175,7 @@ class LockIn:
             x = None
             for g in range(self.games):
                 left = self.games - g - 1
-                if rng.random() < self.a:
+                if rng.random() < self.avail[g]:
                     x = rng.gauss(self.mus[g], self.sigma)
                 if x is not None and left > 0 and x >= self.threshold(left):
                     break
@@ -185,6 +195,20 @@ def week_state(games, sleeper_pts, started):
     sl = sleeper_pts
     locked = bool(gs) and sl is not None and abs(sl - gs[-1]['fp']) > 0.05 and any(abs(sl - g['fp']) <= 0.05 for g in gs)
     return dict(games=gs, current=sl if locked else cur, locked=locked, sleeper=sl)
+
+
+def game_avail(a, injury, projected, sits):
+    """Chance he plays one game this week.
+
+    a: his season-long rate (already capped by an injury tag). It counts injuries that may come later
+    in the season, so it is too low for a healthy player whose game is days away.
+    projected: Sleeper's points for this game (None if no projection). sits: Sleeper gives him 0 minutes.
+    """
+    if sits:
+        return min(a, A_SLEEPER_OUT)
+    if injury in INJ_AVAIL or projected is None:
+        return a
+    return max(a, A_PROJECTED)
 
 
 def week_mus(belief_mu, sleeper_mus, mix=0.5):

@@ -101,7 +101,8 @@ def render(R):
             if reasons:
                 D.head('Why')
                 D.bullets(reasons)
-            D.para("'Typical best' = the score you can expect if you skip this game and lock the best of the games left. "
+            D.para("'Typical best' = what you can expect if you pass on this game and lock well later. "
+                   "It is not the best of the games left, because you can't go back to a game you passed. "
                    "Lock when tonight beats it.", muted=True)
         D.head('Bench swaps')
         if R.get('swaps'):

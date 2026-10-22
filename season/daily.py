@@ -135,7 +135,7 @@ def main():
     this_week = team_games(sched, week=week)
 
     # Sleeper's game-by-game projections, scored with league settings: (pid, date) -> points.
-    sl_proj = {}
+    sl_proj, sl_sits = {}, set()
     for w in (week, week + 1):
         try:
             rows = fetch.week_projection(w)
@@ -144,13 +144,16 @@ def main():
             continue
         for r in rows:
             st = r.get('stats') or {}
-            if r.get('date') and st.get('sp'):
+            if r.get('date') and not st.get('sp'):
+                sl_sits.add((r['player_id'], r['date']))
+            elif r.get('date'):
                 sl_proj[r['player_id'], r['date']] = model.fantasy_points(st, scoring) + scoring.get('pf', 0) * model.PF_PER_MIN * st['sp'] / 60
 
     def lock(pid, dates):
         b = B[pid]
         mus = model.week_mus(b['mu'], [sl_proj.get((pid, d)) for d in dates], MIX)
-        return model.LockIn(b['mu'], b['sigma'], b['a'], len(dates), mus)
+        avail = [model.game_avail(b['a'], b['injury'], sl_proj.get((pid, d)), (pid, d) in sl_sits) for d in dates]
+        return model.LockIn(b['mu'], b['sigma'], b['a'], len(dates), mus, avail)
 
     def week_avg(pid):
         dates = left.get(B[pid]['team'], [])

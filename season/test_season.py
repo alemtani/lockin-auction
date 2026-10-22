@@ -51,6 +51,18 @@ class LockInMath(unittest.TestCase):
         self.assertAlmostEqual(starter, 30, delta=0.05)
         self.assertAlmostEqual(lineup.swap_gain(starter, bench), 8.9, delta=0.1)
 
+    def test_per_game_avail(self):
+        # One a for all games gives the old answer; a game he likely sits makes waiting worth less.
+        same = model.LockIn(35, 11, 0.8, 3, avail=[0.8] * 3)
+        self.assertAlmostEqual(same.week_value(), model.LockIn(35, 11, 0.8, 3).week_value())
+        sits = model.LockIn(35, 11, 0.8, 3, avail=[0.8, 0.8, 0.1])  # likely sits the last game
+        self.assertLess(sits.threshold(2), same.threshold(2))
+        self.assertLess(sits.week_value(), same.week_value())
+        self.assertEqual(model.game_avail(0.82, '', 33.0, False), 0.95)
+        self.assertEqual(model.game_avail(0.82, 'GTD', 33.0, False), 0.82)
+        self.assertEqual(model.game_avail(0.82, '', None, False), 0.82)
+        self.assertEqual(model.game_avail(0.82, '', None, True), 0.1)
+
     def test_bench_game_does_not_count(self):
         gs = [dict(date='mon', fp=30.0), dict(date='wed', fp=48.8)]
         bench_wed = model.week_state(gs, 48.8, lambda d: d != 'wed')
