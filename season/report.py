@@ -12,7 +12,7 @@ STYLE = """<style>
 .lk td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .lk .m{color:#777;font-size:12px}
 </style>"""
-CALL_COLOR = {'LOCK': '#0a7d32', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
+CALL_COLOR = {'LOCK': '#0a7d32', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
 
 
 def d(day):
@@ -95,6 +95,9 @@ def render(R):
                 colors[i] = CALL_COLOR.get(x['call'])
                 if x['call'] == 'LOCK':
                     reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. {x['fp']:.1f} beats it by {x['fp'] - x['thr']:.1f}. Lock it.")
+                elif x['call'] == 'COIN FLIP':
+                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. "
+                                   f"They are {abs(x['fp'] - x['thr']):.1f} apart. That is a coin flip. Locking and rolling are worth the same.")
                 elif x['call'] == 'KEEP ROLLING':
                     reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. That is {x['thr'] - x['fp']:.1f} more. Keep rolling.")
             D.table(['Player', 'Score', 'Expected', 'Min', 'Games left', 'Call'], rows, colors)

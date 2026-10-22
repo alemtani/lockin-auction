@@ -23,6 +23,7 @@ GAIN_CLAIM = 4.0    # points per week: player on waivers, costs priority
 GAIN_SWAP = 3.0     # points: bench swap
 NEXT_WEEK = 0.5     # weight of next week's value in waiver math
 COIN_FLIP = 2.0     # points: a starter this close to his bench alternative gets an asterisk
+LOCK_TIE = 1.0      # points: a score this close to his typical best is a coin flip
 MIX = 0.5           # weight of Sleeper's game-by-game projection in this week's expected points
 
 
@@ -312,7 +313,7 @@ def main():
             lk = lock(pid, [yday] + left.get(b['team'], []))
             thr = lk.threshold(r) if r else None
             started = in_lineup(pid, yday)
-            call = 'FINAL' if not r else 'LOCKED' if wg['locked'] else 'LOCK' if g['fp'] >= thr else 'KEEP ROLLING'
+            call = 'FINAL' if not r else 'LOCKED' if wg['locked'] else 'COIN FLIP' if abs(g['fp'] - thr) < LOCK_TIE else 'LOCK' if g['fp'] >= thr else 'KEEP ROLLING'
             res.append(dict(name=b['name'], fp=g['fp'], mu=b['mu'], sigma=b['sigma'], z=(g['fp'] - b['mu']) / b['sigma'],
                             min=g['min'], left=r, thr=thr, call=call if started else 'bench', started=started))
         res.sort(key=lambda x: (not x['started'], -x['fp']))
