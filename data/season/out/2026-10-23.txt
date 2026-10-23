@@ -1,0 +1,60 @@
+Lock-In Fri 10/23: results + lock calls
+
+Week 1 vs 2 peas ina Podz (<3 Podz): you 365, them 305 (expected). Win chance 83%.
+
+LAST NIGHT (THU 10/22)
+Player         Score  Expected  Min  Games left  Call        
+Jamal Murray   -4.5   34        37   1           KEEP ROLLING
+Jarrett Allen  22.8   29        28   1           bench       
+
+WHY
+- Jamal Murray: scored -4.5. With 1 game(s) left, his typical best is 33.4. That is 37.9 more. Keep rolling.
+'Typical best' = what you can expect if you pass on this game and lock well later. It is not the best of the games left, because you can't go back to a game you passed. Lock when tonight beats it.
+
+BENCH SWAPS
+No swap worth 3+ points.
+
+LINEUP FROM TODAY
+Slot  Player              Games  Week score  Per game  Note
+PG    Darius Garland      2      39.2        31.7          
+SG    Kyrie Irving        2      33.9        28.4          
+G     LaMelo Ball         2      36.7        30.7          
+SF    Kevin Durant        2      39.8        34.3          
+PF    Lauri Markkanen     2      36.9        32.3          
+F     Michael Porter Jr.  2      35.4        30.3          
+C     Anthony Davis       2      57.0        36.1          
+UTIL  Domantas Sabonis    2      43.9        37.9          
+UTIL  Austin Reaves       2      42.0        34.7          
+Change in Sleeper: start Kyrie Irving; bench Jamal Murray.
+Bench: Jamal Murray 31.5 (1g), Damian Lillard 30.5 (1g), Jarrett Allen 25.5 (1g), Mikal Bridges 25.1 (2g), Coby White 5.3 (2g, Out)
+'Week score' = expected locked score for the week. It counts the games left and the chance he plays, so a 4-game player can beat a better 3-game player.
+You are the favorite: close calls go to steady players.
+Their best: Jalen Duren 40, Tyrese Haliburton 40, Ty Jerome 39.
+
+WAIVER PICKUPS
+No move. No free agent beats your roster by enough. The closest:
+1. Add Day'Ron Sharpe (C BKN), drop Coby White: +0.0 per week (no gain: he would not crack your top 12).
+projected 22, averaging 20 in 1 games → we now expect 22 (trust in real games 13%); 2 games left this week, 3 next; on waivers: a claim uses your priority
+2. Add Fred VanVleet (PG HOU), drop Coby White: +0.0 per week (no gain: he would not crack your top 12).
+projected 22, averaging 24 in 1 games → we now expect 22 (trust in real games 20%); 2 games left this week, 4 next; on waivers: a claim uses your priority
+3. Add John Collins (C/PF DET), drop Coby White: +0.0 per week (no gain: he would not crack your top 12).
+projected 24, averaging 13 in 1 games → we now expect 23 (trust in real games 8%); 2 games left this week, 3 next; on waivers: a claim uses your priority
+Gain = how much better your lineup gets this week (plus half of next week). A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Games  Now   Trust real  50/50 at
+Anthony Davis       38.2       57.0      1      40.8  13%         7       
+Domantas Sabonis    37.0       40.0      1      37.5  13%         7       
+Austin Reaves       37.4       42.0      1      37.3  8%          11      
+Damian Lillard      32.3       48.8      1      36.4  20%         4       
+Kevin Durant        35.8       39.8      1      36.4  8%          11      
+Jamal Murray        36.5       -4.5      1      33.5  8%          11      
+Lauri Markkanen     34.0       22.5      1      33.5  8%          11      
+Darius Garland      31.7       39.2      1      32.1  8%          11      
+LaMelo Ball         32.6       30.0      1      31.8  8%          11      
+Michael Porter Jr.  31.2       29.8      1      31.3  8%          11      
+Kyrie Irving        35.0       20.2      1      31.2  20%         4       
+Jarrett Allen       29.0       22.8      1      28.5  10%         9       
+Coby White          28.5       —         0      28.5  0%          11      
+Mikal Bridges       23.1       2.2       1      20.4  13%         7       
+'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
