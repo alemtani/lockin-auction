@@ -92,21 +92,24 @@ def render(R):
             rows, colors, reasons = [], {}, []
             for i, x in enumerate(res):
                 rows.append([x['name'], f"{x['fp']:.1f}", f"{x['mu']:.0f}", f"{x['min']:.0f}", x['left'], x['call']])
-                colors[i] = CALL_COLOR.get(x['call'])
-                if x['call'] == 'LOCK':
-                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. {x['fp']:.1f} beats it by {x['fp'] - x['thr']:.1f}. Lock it.")
-                elif x['call'] == 'COIN FLIP':
-                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. "
-                                   f"They are {abs(x['fp'] - x['thr']):.1f} apart. That is a coin flip. Locking and rolling are worth the same.")
-                elif x['call'] == 'KEEP ROLLING':
-                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. With {x['left']} game(s) left, his typical best is {x['thr']:.1f}. That is {x['thr'] - x['fp']:.1f} more. Keep rolling.")
-            D.table(['Player', 'Score', 'Expected', 'Min', 'Games left', 'Call'], rows, colors)
+                colors[i] = CALL_COLOR.get(x['call'].split(':')[0])
+                if x['call'].split(':')[0] in ('LOCK', 'COIN FLIP', 'KEEP ROLLING'):
+                    ahead = (f"His last game this week is worth about {x['thr']:.1f}" if x['left'] == 1 else
+                             f"With {x['left']} games left, his typical best is {x['thr']:.1f}")
+                    gap = abs(x['fp'] - x['thr'])
+                    end = {'LOCK': f"{x['fp']:.1f} beats it by {gap:.1f}. Lock it.",
+                           'COIN FLIP: LOCK': f"They are {gap:.1f} apart. That is a coin flip. You are the favorite, so play it safe. Lock it.",
+                           'COIN FLIP: ROLL': f"They are {gap:.1f} apart. That is a coin flip. You are the underdog, so take the chance. Keep rolling.",
+                           'KEEP ROLLING': f"That is {gap:.1f} more. Keep rolling."}[x['call']]
+                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. {ahead}. {end}")
+            D.table(['Player', 'Score', 'Avg exp', 'Minutes', 'Games left', 'Call'], rows, colors)
             if reasons:
                 D.head('Why')
                 D.bullets(reasons)
             D.para("'Typical best' = what you can expect if you pass on this game and lock well later. "
                    "It is not the best of the games left, because you can't go back to a game you passed. "
-                   "Lock when tonight beats it.", muted=True)
+                   "Lock when tonight beats it. 'Avg exp' = his usual game; the call also uses the matchup and injury news for the games left. "
+                   "Sleeper doesn't share your locks, so this email assumes you followed every call.", muted=True)
         D.head('Bench swaps')
         if R.get('swaps'):
             D.bullets([f"{s['slot']}: start {s['into']} for {s['out']}. +{s['gain']:.1f} points. {s['into']} has {s['in_games']} games left (worth about {s['in_v']:.1f}); "

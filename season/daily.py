@@ -196,10 +196,42 @@ def main():
             started_on[date] = set(open(f).read().split()) if os.path.exists(f) else set(starters_now)  # no record: best guess
         return pid in started_on[date]
 
-    # Per player: this week's started games so far, Sleeper's current score, locked or not.
-    pts = (me_m.get('players_points') or {})
-    week_games = {pid: model.week_state([g for g in games.get(pid, []) if g['date'] in weeks[week]], pts.get(pid),
-                                        lambda d, pid=pid: in_lineup(pid, d)) for pid in my_ids}
+    # Lock calls, kept per game date. Sleeper's public data does not show locks, so assume you
+    # followed every call. A coin flip: lock it when you are the favorite, roll when you are not.
+    # A game with no stored call gets today's call.
+    cdir = f'{OUT}/calls'
+    calls_on = {}
+
+    def stored_call(pid, date):
+        if date not in calls_on:
+            f = f'{cdir}/{date}.txt'
+            calls_on[date] = dict(l.split('|')[:2] for l in open(f).read().splitlines() if l) if os.path.exists(f) else {}
+        return calls_on[date].get(pid)
+
+    def lock_call(pid, date, fp):
+        """Call after a started game: (call, typical best). FINAL when no games are left after it."""
+        after = [d for d in this_week.get(B[pid]['team'], []) if d > date]
+        if not after:
+            return 'FINAL', None
+        thr = lock(pid, [date] + after).threshold(len(after))
+        return ('COIN FLIP' if abs(fp - thr) < LOCK_TIE else 'LOCK' if fp >= thr else 'KEEP ROLLING'), thr
+
+    favorite = {'me': True}  # set from the win chance below
+
+    def locked_on(pid, mine=True):
+        def f(date, fp):
+            c = stored_call(pid, date) or lock_call(pid, date, fp)[0]
+            return c in ('LOCK', 'COIN FLIP: LOCK') or c == 'COIN FLIP' and favorite['me'] == mine
+        return f
+
+    def this_week_games(pid):
+        return [g for g in games.get(pid, []) if g['date'] in weeks[week]]
+
+    # Per player: this week's started games so far, current score, locked or not.
+    def my_week_games():
+        return {pid: model.week_state(this_week_games(pid), lambda d, pid=pid: in_lineup(pid, d), locked_on(pid))
+                for pid in my_ids}
+    week_games = my_week_games()
 
     def value_now(pid):
         wg = week_games.get(pid) or {}
@@ -217,21 +249,37 @@ def main():
         return sum((x - m) ** 2 for x in xs) / len(xs)
 
     # ---------- lineup and matchup ----------
-    rows = lineup_rows(my_ids, value_now)
-    tot, picks = lineup.best_lineup(rows)
-    if opp:
-        orows = [(pid, B[pid]['pos'], e_week(pid)) for pid in (opp['players'] or []) if pid in B and pid not in (opp.get('reserve') or [])]
-        otot, opicks = lineup.best_lineup(orows)
-        var = lambda ps: sum(spread(p) for p in ps.values())
-        chance = model.win_chance(tot, var(picks), otot, var(opicks))
-        tilt = 0.15 if chance < 0.4 else -0.15 if chance > 0.6 else 0.0
-        if tilt:
-            tilted = [(pid, pos, v + tilt * spread(pid) ** 0.5) for pid, pos, v in rows]
-            _, picks = lineup.best_lineup(tilted)
-            tot = sum(value_now(p) for p in picks.values())
+    def play_matchup():
+        rows = lineup_rows(my_ids, value_now)
+        tot, picks = lineup.best_lineup(rows)
+        if opp:
+            # Their games so far count too. We can't see their past lineups or locks: use today's starters
+            # and assume they lock like we would.
+            o_start = set(opp.get('starters') or [])
+            oval = {}
+            for pid in opp['players'] or []:
+                if pid in B and pid not in (opp.get('reserve') or []):
+                    wg = model.week_state(this_week_games(pid), lambda d, pid=pid: pid in o_start, locked_on(pid, mine=False))
+                    oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
+            orows = [(pid, B[pid]['pos'], v) for pid, v in oval.items()]
+            otot, opicks = lineup.best_lineup(orows)
+            var = lambda ps: sum(spread(p) for p in ps.values())
             chance = model.win_chance(tot, var(picks), otot, var(opicks))
-        R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot, chance=chance, tilt=tilt,
-                            their_top=sorted(((B[p]['name'], e_week(p)) for p in opicks.values()), key=lambda x: -x[1])[:3])
+            tilt = 0.15 if chance < 0.4 else -0.15 if chance > 0.6 else 0.0
+            if tilt:
+                tilted = [(pid, pos, v + tilt * spread(pid) ** 0.5) for pid, pos, v in rows]
+                _, picks = lineup.best_lineup(tilted)
+                tot = sum(value_now(p) for p in picks.values())
+                chance = model.win_chance(tot, var(picks), otot, var(opicks))
+            R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot, chance=chance, tilt=tilt,
+                                their_top=sorted(((B[p]['name'], oval[p]) for p in opicks.values()), key=lambda x: -x[1])[:3])
+        return tot, picks, rows
+
+    tot, picks, rows = play_matchup()
+    if opp and R['matchup']['chance'] < 0.5:  # underdog: coin flips roll, on both sides
+        favorite['me'] = False
+        week_games = my_week_games()
+        tot, picks, rows = play_matchup()
 
     # Coin flips: a starter whose place in the lineup is worth less than COIN_FLIP points.
     flips = {}
@@ -310,14 +358,18 @@ def main():
                 continue
             b, wg = B[pid], week_games[pid]
             r = len(left.get(b['team'], []))
-            lk = lock(pid, [yday] + left.get(b['team'], []))
-            thr = lk.threshold(r) if r else None
+            call, thr = lock_call(pid, yday, g['fp'])
+            if call == 'COIN FLIP':
+                call += ': LOCK' if favorite['me'] else ': ROLL'
+            call = 'LOCKED' if wg['locked'] and wg['locked_date'] < yday else stored_call(pid, yday) or call
             started = in_lineup(pid, yday)
-            call = 'FINAL' if not r else 'LOCKED' if wg['locked'] else 'COIN FLIP' if abs(g['fp'] - thr) < LOCK_TIE else 'LOCK' if g['fp'] >= thr else 'KEEP ROLLING'
-            res.append(dict(name=b['name'], fp=g['fp'], mu=b['mu'], sigma=b['sigma'], z=(g['fp'] - b['mu']) / b['sigma'],
+            res.append(dict(pid=pid, name=b['name'], fp=g['fp'], mu=b['mu'], sigma=b['sigma'], z=(g['fp'] - b['mu']) / b['sigma'],
                             min=g['min'], left=r, thr=thr, call=call if started else 'bench', started=started))
         res.sort(key=lambda x: (not x['started'], -x['fp']))
         R['results'] = res
+        os.makedirs(cdir, exist_ok=True)
+        if not args.date and not os.path.exists(f'{cdir}/{yday}.txt'):  # first run of the day wins; a replay never writes
+            open(f'{cdir}/{yday}.txt', 'w').write(''.join(f"{x['pid']}|{x['call']}|{x['fp']:.2f}\n" for x in res if x['started']))
         swaps = []
         for i, s in enumerate(lineup.SLOTS):
             if i >= len(starters_now) or starters_now[i] not in B:

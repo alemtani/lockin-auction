@@ -65,11 +65,14 @@ class LockInMath(unittest.TestCase):
 
     def test_bench_game_does_not_count(self):
         gs = [dict(date='mon', fp=30.0), dict(date='wed', fp=48.8)]
-        bench_wed = model.week_state(gs, 48.8, lambda d: d != 'wed')
+        never = lambda d, fp: False
+        bench_wed = model.week_state(gs, lambda d: d != 'wed', never)
         self.assertEqual(bench_wed['current'], 30.0)
         self.assertFalse(bench_wed['locked'])
-        self.assertIsNone(model.week_state(gs, 48.8, lambda d: False)['current'])
-        self.assertTrue(model.week_state(gs, 30.0, lambda d: True)['locked'])  # Sleeper shows Mon: he locked it
+        self.assertIsNone(model.week_state(gs, lambda d: False, never)['current'])
+        mon = model.week_state(gs, lambda d: True, lambda d, fp: d == 'mon')  # locked Mon: Wed no longer counts
+        self.assertEqual((mon['current'], mon['locked']), (30.0, True))
+        self.assertFalse(model.week_state(gs, lambda d: d != 'mon', lambda d, fp: d == 'mon')['locked'])  # bench game: no lock
 
     def test_per_game_means(self):
         # Same mean for every game gives the old answer; one weak game lands between 2 and 3 good games.
