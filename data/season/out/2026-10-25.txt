@@ -1,0 +1,62 @@
+Lock-In Sun 10/25: results + lock calls
+
+Week 1 vs 2 peas ina Podz (<3 Podz): you 416, them 395 (expected). Win chance 64%.
+
+LAST NIGHT (SAT 10/24)
+Player              Score  Avg exp  Minutes  Games left  Call  
+Jamal Murray        65.0   37       43       0           FINAL 
+Michael Porter Jr.  46.0   32       33       1           LOCK  
+Kevin Durant        26.2   36       37       0           LOCKED
+Anthony Davis       15.8   34       31       0           LOCKED
+Jarrett Allen       37.5   29       27       0           bench 
+
+WHY
+- Michael Porter Jr.: scored 46.0. His last game this week is worth about 31.1. 46.0 beats it by 14.9. Lock it.
+'Typical best' = what you can expect if you pass on this game and lock well later. It is not the best of the games left, because you can't go back to a game you passed. Lock when tonight beats it. 'Avg exp' = his usual game; the call also uses the matchup and injury news for the games left. Sleeper doesn't share your locks, so this email assumes you followed every call.
+
+BENCH SWAPS
+No swap worth 3+ points.
+
+LINEUP FROM TODAY
+Slot  Player              Games  Week score  Per game  Note                   
+PG    Jamal Murray        0      65.0        37.0                             
+SG    Kyrie Irving        0      31.5        31.5      Out, plays 10% of games
+G     Darius Garland      1      39.2        30.5                             
+SF    Kevin Durant        0      39.8        35.6                             
+PF    Anthony Davis       0      57.0        33.9                             
+F     Michael Porter Jr.  1      46.0        31.1                             
+C     Domantas Sabonis    1      59.0        39.7                             
+UTIL  Lauri Markkanen     1      31.6        31.9                             
+UTIL  Austin Reaves       1      46.8        36.0                             
+Your Sleeper lineup already matches.
+Bench: LaMelo Ball 28.8 (1g), Mikal Bridges 17.9 (1g), Damian Lillard 0.0 (0g), Jarrett Allen 0.0 (0g), Coby White 0.0 (0g, Out)
+'Week score' = expected locked score for the week. It counts the games left and the chance he plays, so a 4-game player can beat a better 3-game player.
+You are the favorite: close calls go to steady players.
+Their best: Ty Jerome 74, Jayson Tatum 60, Jabari Smith Jr. 48.
+
+WAIVER PICKUPS
+1. Add Day'Ron Sharpe (C BKN), drop Kyrie Irving: +15.1 per week.
+projected 22, averaging 8 in 2 games → we now expect 18 (trust in real games 23%); 1 games left this week, 3 next
+2. Add Jalen Suggs (PG ORL), drop Kyrie Irving: +13.5 per week.
+projected 20, averaging 17 in 2 games → we now expect 20 (trust in real games 23%); 1 games left this week, 3 next; on waivers: a claim uses your priority
+3. Add Jakob Poeltl (C TOR), drop Kyrie Irving: +10.7 per week.
+projected 22, averaging 12 in 2 games → we now expect 20 (trust in real games 15%); 1 games left this week, 3 next
+Gain = how much better your lineup gets this week (plus half of next week). A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Games  Now   Trust real  50/50 at
+Domantas Sabonis    37.0       49.5      2      40.4  23%         7       
+Austin Reaves       37.4       44.4      2      38.6  15%         11      
+Jamal Murray        36.5       30.2      2      37.0  15%         11      
+Kevin Durant        35.8       33.6      3      35.6  21%         11      
+Anthony Davis       38.2       24.8      3      33.9  31%         7       
+Damian Lillard      32.3       34.9      2      33.2  34%         4       
+Lauri Markkanen     34.0       24.5      2      32.9  15%         11      
+Michael Porter Jr.  31.2       37.9      2      32.3  15%         11      
+Darius Garland      31.7       30.1      2      31.7  15%         11      
+Kyrie Irving        35.0       25.9      2      31.5  34%         4       
+LaMelo Ball         32.6       22.8      2      29.5  15%         11      
+Jarrett Allen       29.0       30.1      2      29.3  18%         9       
+Coby White          28.5       —         0      28.5  0%          11      
+Mikal Bridges       23.1       -2.8      2      15.8  23%         7       
+'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
