@@ -1,0 +1,58 @@
+Lock-In week 3: lineup + pickups (Mon 11/2–Sun 11/8)
+
+Week 3 vs Rohan312: you 394, them 361 (expected). Win chance 73%.
+
+BEST LINEUP THIS WEEK
+Slot  Player               Games  Week score  Per game  Note
+PG    Jamal Murray         3      48.2        36.4          
+SG    Damian Lillard*      4      40.9        29.2          
+G     LaMelo Ball*         4      39.2        27.2          
+SF    Kevin Durant*        3      39.6        32.6          
+PF    Anthony Davis        4      48.6        34.3          
+F     Michael Porter Jr.*  4      41.0        29.9          
+C     Domantas Sabonis     4      49.7        38.0          
+UTIL  Lauri Markkanen*     4      39.0        28.9          
+UTIL  Austin Reaves        4      48.2        34.4          
+* Coin flip vs Kyrie Irving (39.6, bench): Lauri Markkanen 39.0 (-0.6 apart), LaMelo Ball 39.2 (-0.3 apart), Kevin Durant 39.6 (0.0 apart), Damian Lillard 40.9 (1.4 apart), Michael Porter Jr. 41.0 (1.4 apart). News or minutes can change these. The daily email rechecks and says if one flips.
+Change in Sleeper: start Damian Lillard, Lauri Markkanen; bench Darius Garland, Kyrie Irving.
+Bench: Kyrie Irving 39.6 (4g, GTD), Darius Garland 38.3 (3g), Jarrett Allen 36.4 (4g), Coby White 32.5 (3g), De'Anthony Melton 27.4 (3g)
+'Week score' = expected locked score for the week. It counts the games left and the chance he plays, so a 4-game player can beat a better 3-game player.
+You are the favorite: close calls go to steady players.
+Their best: Jalen Brunson 44, Bam Adebayo 42, Walker Kessler 41.
+
+WAIVER PICKUPS
+No move. No free agent beats your roster by enough. The closest:
+1. Add Isaiah Hartenstein (C OKC), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+projected 23, averaging 18 in 6 games → we now expect 21 (trust in real games 34%); 4 games left this week, 4 next
+2. Add Day'Ron Sharpe (C BKN), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+projected 22, averaging 14 in 6 games → we now expect 17 (trust in real games 47%); 4 games left this week, 2 next
+3. Add Collin Gillespie (PG/SG PHX), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+projected 20, averaging 17 in 4 games → we now expect 19 (trust in real games 37%); 4 games left this week, 4 next
+Gain = how much better your lineup gets this week (plus half of next week). A move needs +2 for a free agent, +4 if it costs waiver priority.
+
+OUTLOOK CHANGES THIS WEEK
+- Kyrie Irving: 31.5 → 34.5 per game
+- Kevin Durant: 35.6 → 33.4 per game
+- Damian Lillard: 33.2 → 28.0 per game
+- Lauri Markkanen: 33.6 → 27.4 per game
+- Darius Garland: 30.8 → 28.0 per game
+- LaMelo Ball: 28.5 → 25.2 per game
+- Austin Reaves: 39.1 → 35.4 per game
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Games  Now   Trust real  50/50 at
+Domantas Sabonis    37.0       37.9      6      38.2  47%         7       
+Jamal Murray        36.5       39.0      5      38.2  30%         11      
+Austin Reaves       37.4       31.3      7      35.4  37%         11      
+Anthony Davis       38.2       30.2      6      34.8  47%         7       
+Kyrie Irving        35.0       33.0      5      34.5  55%         4       
+Kevin Durant        35.8       32.0      7      33.4  37%         11      
+Jarrett Allen       29.0       30.5      6      29.6  38%         9       
+Michael Porter Jr.  31.2       27.4      6      29.6  34%         11      
+Coby White          28.5       —         0      28.5  0%          11      
+Darius Garland      31.7       22.1      6      28.0  34%         11      
+Damian Lillard      32.3       24.9      5      28.0  55%         4       
+Lauri Markkanen     34.0       19.4      5      27.4  30%         11      
+LaMelo Ball         32.6       18.2      7      25.2  37%         11      
+De'Anthony Melton   17.4       20.3      7      18.4  37%         11      
+'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
