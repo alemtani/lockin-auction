@@ -1,0 +1,83 @@
+Lock-In Thu 11/5: results + lock calls
+
+Week 3 vs Rohan312: you 381, them 378 (expected). Win chance 52%.
+
+LAST NIGHT (WED 11/4)
+Player              Score  Avg exp  Minutes  Games left  Call        
+Anthony Davis       48.5   36       30       2           LOCK        
+Damian Lillard      36.8   30       33       2           LOCK        
+Kyrie Irving        33.2   35       36       2           KEEP ROLLING
+Austin Reaves       33.2   35       37       2           KEEP ROLLING
+Domantas Sabonis    31.8   36       35       2           KEEP ROLLING
+Lauri Markkanen     31.5   29       39       2           LOCKED      
+Michael Porter Jr.  28.2   30       38       2           KEEP ROLLING
+LaMelo Ball         27.8   27       31       2           LOCKED      
+Jamal Murray        23.0   38       28       1           LOCKED      
+Darius Garland      35.2   28       39       1           bench       
+Kevin Durant        25.2   32       35       1           bench       
+Jarrett Allen       -1.0   26       7        2           bench       
+Coby White          -1.8   19       18       1           bench       
+
+WHY
+- Anthony Davis: scored 48.5. With 2 games left, his typical best is 41.0. 48.5 beats it by 7.5. Lock it.
+- Damian Lillard: scored 36.8. With 2 games left, his typical best is 35.6. 36.8 beats it by 1.1. Lock it.
+- Kyrie Irving: scored 33.2. With 2 games left, his typical best is 37.3. That is 4.0 more. Keep rolling.
+- Austin Reaves: scored 33.2. With 2 games left, his typical best is 40.1. That is 6.8 more. Keep rolling.
+- Domantas Sabonis: scored 31.8. With 2 games left, his typical best is 42.4. That is 10.6 more. Keep rolling.
+- Michael Porter Jr.: scored 28.2. With 2 games left, his typical best is 35.7. That is 7.5 more. Keep rolling.
+'Typical best' = what you can expect if you pass on this game and lock well later. It is not the best of the games left, because you can't go back to a game you passed. Lock when tonight beats it. 'Avg exp' = his usual game; the call also uses the matchup and injury news for the games left. Sleeper doesn't share your locks, so this email assumes you followed every call.
+
+BENCH SWAPS
+No swap worth 3+ points.
+
+LINEUP FROM TODAY
+Slot  Player              Games  Week score  Per game  Note              
+PG    Kyrie Irving        2      37.1        31.5      plays 73% of games
+SG    Damian Lillard      2      36.8        30.0                        
+G     Jamal Murray        1      60.5        35.5                        
+SF    Lauri Markkanen     2      38.0        30.0                        
+PF    Anthony Davis       2      48.5        34.0                        
+F     Michael Porter Jr.  2      35.5        30.5                        
+C     Domantas Sabonis    2      42.1        36.7                        
+UTIL  LaMelo Ball         2      43.2        30.6                        
+UTIL  Austin Reaves       2      39.8        33.5                        
+Your Sleeper lineup already matches.
+Bench: Kevin Durant 31.2 (1g), Darius Garland 28.8 (1g), Jarrett Allen 24.0 (2g, DTD), De'Anthony Melton 21.6 (2g), Coby White 17.2 (1g)
+'Week score' = expected locked score for the week. It counts the games left and the chance he plays, so a 4-game player can beat a better 3-game player.
+Their best: Bam Adebayo 62, Jalen Brunson 54, Cedric Coward 39.
+
+WAIVER PICKUPS
+No move. No free agent beats your roster by enough. The closest:
+1. Add Isaiah Hartenstein (C OKC), drop Coby White: +0.7 per week (not worth it yet).
+projected 23, averaging 18 in 8 games → we now expect 21 (trust in real games 40%); 2 games left this week, 4 next; on waivers: a claim uses your priority
+2. Add Saddiq Bey (PF/SF NOP), drop Coby White: +0.0 per week (no gain: he would not crack your top 12).
+projected 23, averaging 25 in 8 games → we now expect 24 (trust in real games 53%); 2 games left this week, 4 next
+3. Add Daniel Gafford (C DAL), drop Coby White: +0.0 per week (no gain: he would not crack your top 12).
+projected 20, averaging 19 in 8 games → we now expect 21 (trust in real games 40%); 2 games left this week, 4 next
+Gain = how much better your lineup gets this week (plus half of next week). A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+OUTLOOK CHANGES THIS WEEK
+- Kyrie Irving: 30.4 → 34.6 per game
+- Kevin Durant: 34.4 → 32.4 per game
+- Damian Lillard: 32.4 → 29.9 per game
+- Domantas Sabonis: 39.9 → 36.0 per game
+- Jarrett Allen: 28.9 → 26.2 per game
+- Coby White: 28.5 → 19.3 per game
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Games  Now   Trust real  50/50 at
+Jamal Murray        36.5       39.8      7      37.9  37%         11      
+Domantas Sabonis    37.0       34.9      8      36.0  53%         7       
+Anthony Davis       38.2       33.8      8      36.0  53%         7       
+Austin Reaves       37.4       31.9      9      35.2  43%         11      
+Kyrie Irving        35.0       33.0      6      34.6  60%         4       
+Kevin Durant        35.8       29.9      9      32.4  43%         11      
+Michael Porter Jr.  31.2       27.4      8      30.1  40%         11      
+Damian Lillard      32.3       28.3      7      29.9  63%         4       
+Lauri Markkanen     34.0       23.8      7      29.3  37%         11      
+Darius Garland      31.7       22.3      8      28.2  40%         11      
+LaMelo Ball         32.6       22.1      9      27.2  43%         11      
+Jarrett Allen       29.0       25.9      8      26.2  45%         9       
+Coby White          28.5       -1.8      2      19.3  15%         11      
+De'Anthony Melton   17.4       17.8      8      17.6  40%         11      
+'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
