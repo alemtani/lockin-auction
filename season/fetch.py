@@ -64,3 +64,4 @@ def week_stats(week, final=False):
 def week_projection(week):
     """Game-by-game projections for one week (RotoWire via Sleeper)."""
     return get(f'https://api.sleeper.com/projections/nba/{SEASON}/{week}?season_type=regular', f'proj_week_{week}.json')
+

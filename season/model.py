@@ -103,6 +103,7 @@ def belief(prior, games, team_games=0, injury=''):
                    avg=avg, recent_min=recent_min, rate=rate)
     a = (K_AVAIL * prior['a'] + n) / (K_AVAIL + team_games) if team_games else prior['a']
     a = max(0.0, min(0.98, a))
+    out['a_season'] = a  # before the injury tag: for games after his next one
     if injury in INJ_AVAIL:
         a = min(a, INJ_AVAIL[injury])
     out['a'] = a
@@ -122,18 +123,21 @@ class LockIn:
 
     mus: expected points for each game left, in date order (or one mu for all games).
     avail: chance he plays each game left, in date order (or one a for all games).
+    sigmas: game-to-game swing for each game left (or one sigma for all). The planner uses this,
+            because a slot's games can come from different players.
     eu[r] = expected final score if a game was just played and r more games are left,
             before you know that game's score (so you can still lock it).
     """
 
-    def __init__(self, mu, sigma, a, games, mus=None, avail=None):
+    def __init__(self, mu, sigma, a, games, mus=None, avail=None, sigmas=None):
         self.mus = list(mus) if mus else [mu] * games
         self.avail = list(avail) if avail else [a] * games
+        self.sigmas = list(sigmas) if sigmas else [sigma] * games
         self.mu, self.sigma, self.a, self.games = mu, sigma, a, games
         self.eu = [self.game_mu(0)]
         for r in range(1, games):
-            m = self.game_mu(r)
-            self.eu.append(sum(w * self.after_game(m + sigma * z, r) for z, w in zip(_Z, _W)))
+            m, sd = self.game_mu(r), self.sigmas[games - 1 - r]
+            self.eu.append(sum(w * self.after_game(m + sd * z, r) for z, w in zip(_Z, _W)))
 
     def game_mu(self, r):
         """Expected points of the game that has r games after it."""
@@ -176,7 +180,7 @@ class LockIn:
             for g in range(self.games):
                 left = self.games - g - 1
                 if rng.random() < self.avail[g]:
-                    x = rng.gauss(self.mus[g], self.sigma)
+                    x = rng.gauss(self.mus[g], self.sigmas[g])
                 if x is not None and left > 0 and x >= self.threshold(left):
                     break
             out.append(x if x is not None else 0.0)
@@ -198,17 +202,22 @@ def week_state(games, started, locked_on):
     return dict(games=gs, current=gs[-1]['fp'] if gs else None, locked=False, locked_date=None)
 
 
-def game_avail(a, injury, projected, sits):
+def game_avail(a, injury, projected, sits, first=True, a_season=None):
     """Chance he plays one game this week.
 
-    a: his season-long rate (already capped by an injury tag). It counts injuries that may come later
-    in the season, so it is too low for a healthy player whose game is days away.
+    a: his season-long rate, capped by an injury tag. a_season: the same rate without the cap.
+    The season rate counts injuries that may come later in the season, so it is too low for a
+    healthy player whose game is days away.
     projected: Sleeper's points for this game (None if no projection). sits: Sleeper gives him 0 minutes.
+    first: this is his next game. An injury tag is about the next game. For later games, Sleeper's
+    minutes carry the return date (an Out player can have 0, 0, 20, 20), so trust them.
     """
     if sits:
-        return min(a, A_SLEEPER_OUT)
-    if injury in INJ_AVAIL or projected is None:
+        return min(a_season if a_season is not None else a, A_SLEEPER_OUT)
+    if projected is None:
         return a
+    if injury in INJ_AVAIL:
+        return a if first or a_season is None else a_season
     return max(a, A_PROJECTED)
 
 

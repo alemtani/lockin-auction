@@ -63,6 +63,21 @@ class LockInMath(unittest.TestCase):
         self.assertEqual(model.game_avail(0.82, '', None, False), 0.82)
         self.assertEqual(model.game_avail(0.82, '', None, True), 0.1)
 
+    def test_out_tag_is_for_the_next_game(self):
+        # Out now, Sleeper gives minutes later in the week (0, 0, 20, 20): back for the later games.
+        av = [model.game_avail(0.1, 'Out', p, p is None, i == 0, 0.85) for i, p in enumerate([None, None, 18.0, 18.0])]
+        self.assertEqual(av, [0.1, 0.1, 0.85, 0.85])
+        # The tag still holds for his next game, and where Sleeper has no projection at all.
+        self.assertEqual(model.game_avail(0.65, 'DTD', 30.0, False, True, 0.9), 0.65)
+        self.assertEqual(model.game_avail(0.1, 'Out', None, False, False, 0.9), 0.1)
+
+    def test_per_game_sigmas(self):
+        # One sigma for all games gives the old answer. A wilder middle game raises the bar to lock the first.
+        # (The last game's swing never matters: you keep it whatever it scores.)
+        same = model.LockIn(30, 10, 1.0, 3)
+        self.assertAlmostEqual(model.LockIn(30, 10, 1.0, 3, sigmas=[10, 10, 10]).threshold(2), same.threshold(2))
+        self.assertGreater(model.LockIn(30, 10, 1.0, 3, sigmas=[10, 16, 10]).threshold(2), same.threshold(2))
+
     def test_bench_game_does_not_count(self):
         gs = [dict(date='mon', fp=30.0), dict(date='wed', fp=48.8)]
         never = lambda d, fp: False

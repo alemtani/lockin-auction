@@ -12,9 +12,10 @@ import argparse, csv, datetime, os, sys, zoneinfo
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(__file__))
-import fetch, lineup, model, report
+import fetch, lineup, model, planner, report
 
 OUT = 'data/season'
+LOCKS = f'{OUT}/locks.txt'
 TO = 'alex.m.tanimoto@gmail.com'
 FA_POOL = 25        # free agents to test as pickups
 DROP_POOL = 5       # my lowest-value players to test as drops
@@ -22,8 +23,8 @@ GAIN_FA = 2.0       # points per week: free agent, no claim needed
 GAIN_CLAIM = 4.0    # points per week: player on waivers, costs priority
 GAIN_SWAP = 3.0     # points: bench swap
 NEXT_WEEK = 0.5     # weight of next week's value in waiver math
-COIN_FLIP = 2.0     # points: a starter this close to his bench alternative gets an asterisk
-LOCK_TIE = 1.0      # points: a score this close to his typical best is a coin flip
+TIE = 1.5           # points: a close call, for lineups and locks alike. Favorite plays it safe, underdog takes the risk.
+RISE_MIN = 1.25     # recent minutes this far above his projected minutes = a bigger role
 MIX = 0.5           # weight of Sleeper's game-by-game projection in this week's expected points
 
 
@@ -62,7 +63,7 @@ def team_games(sched, week=None, after=None, before=None, finished=False):
     return out
 
 
-def load_games(week, day, scoring):
+def load_games(week, day, scoring, save=True):
     """All games played before `day`: pid -> [{'date','fp','min','team'}], oldest first."""
     games = defaultdict(list)
     for w in range(1, week + 1):
@@ -79,6 +80,8 @@ def load_games(week, day, scoring):
                                               min=st['sp'] / 60, team=r.get('team')))
     for g in games.values():
         g.sort(key=lambda x: x['date'])
+    if not save:  # a replay: games.csv keeps every game, for the backtest
+        return games
     os.makedirs(OUT, exist_ok=True)
     with open(f'{OUT}/games.csv', 'w', newline='') as f:
         w = csv.writer(f, delimiter='|', lineterminator='\n')
@@ -101,12 +104,83 @@ def build_priors(players, scoring):
     return pri
 
 
+def plan_preview(day, wdates, left, B, my_ids, reserve, starters_now, week_games, lock):
+    """Batch 2 prototype: this morning's lock calls, today's lineup, and the week plan, as text."""
+    dates = [d for d in wdates if d >= day]
+    players = {}
+    for pid in my_ids:
+        if pid in reserve:
+            continue
+        ds = left.get(B[pid]['team'], [])
+        L = lock(pid, ds) if ds else None
+        players[pid] = dict(name=B[pid]['name'], pos=B[pid]['pos'],
+                            games={d: (L.mus[i], L.avail[i], B[pid]['sigma']) for i, d in enumerate(ds)} if ds else {})
+    # State now: who holds each slot, their scores, and locks (assumed from the calls and locks.txt).
+    holder = {i: p for i, p in enumerate(starters_now) if p in players}
+    score, locked = {}, set()
+    for i, p in holder.items():
+        wg = week_games.get(p) or {}
+        if wg.get('current') is not None:
+            score[p] = wg['current']
+        if wg.get('locked'):
+            locked.add(i)
+    was_locked = set(locked)
+    dn = lambda d: datetime.date.fromisoformat(d).strftime('%a')
+    out = [f'SLOT PLANNER PREVIEW ({dn(day)} {day}, not in the email)']
+    if day not in dates:
+        return out[0] + '\nNo games today.'
+    new, notes, locks = planner.morning(day, dates, holder, score, locked, players)
+    out += ['', 'LOCK CALLS THIS MORNING']
+    if locks:
+        out += [f"- Lock {B[p]['name']} ({x:.1f}) at {lineup.SLOTS[t]}" + (f", moved from {lineup.SLOTS[s]}" if t != s else '') +
+                f": he needed {bar:.1f} to beat rolling into today's game." for p, t, s, x, bar in locks]
+    else:
+        out.append('None.' if score else 'None. Nobody has played yet this week.')
+    rows = []
+    nxt_days = dates[1:]
+    for i, slot in enumerate(lineup.SLOTS):
+        p = new.get(i)
+        nm = B[p]['name'] if p else '(empty)'
+        if i in locked:
+            rows.append([slot, nm, f"locked {score.get(p, 0):.1f}" + (' (today)' if i not in was_locked else ''), '', ''])
+            continue
+        if not p or day not in players[p]['games']:
+            rows.append([slot, nm, f'holds {score[p]:.1f}, no game today' if p in score else 'no game today', '', ''])
+            continue
+        opts = planner.lock_options(p, i, nxt_days, new, score, locked, players)
+        bar, t = opts[0] if opts else (None, None)
+        lock_txt = (f"{bar:.0f}" + (f" (at {lineup.SLOTS[t]})" if t != i else '')) if bar is not None else 'no games left: it stays'
+        plan = notes.get(i, {}).get('plan', [])
+        nxt = next((g for g in plan if g[1] > day), None)
+        if not nxt:
+            if_not = 'nobody: his score stays'
+        elif nxt[0] == p:
+            if_not = f'roll into his next game ({dn(nxt[1])})'
+        else:
+            if_not = f"bench him, try {B[nxt[0]]['name']} ({dn(nxt[1])})"
+        rows.append([slot, nm, 'plays today' + (' (free try)' if p not in score else ''), lock_txt, if_not])
+    head = ['Slot', 'Player', 'Today', 'Lock if >=', 'If below']
+    w = [max(len(str(r[j])) for r in rows + [head]) for j in range(5)]
+    fmt = lambda r: '  '.join(str(x).ljust(n) for x, n in zip(r, w)).rstrip()
+    out += ['', 'TODAY\'S LINEUP', fmt(head)] + [fmt(r) for r in rows]
+    out.append("'Lock if >=' = the score he needs, judged the morning of his next game. Until then his score waits.")
+    open_ = [i for i in range(len(lineup.SLOTS)) if i not in locked]
+    pinned = {new[i] for i in locked if i in new}
+    st = planner.streams({q: v for q, v in players.items() if q not in pinned}, dates, open_)
+    out += ['', 'WEEK PLAN (who tries each open slot; re-planned every morning)']
+    for i in open_:
+        tries = ', '.join(f"{dn(g[1])} {B[g[0]]['name'].split()[-1]}" for g in st[i])
+        out.append(f"{lineup.SLOTS[i]:5} worth {planner.fresh_value(st[i]):4.1f}: {tries or '-'}")
+    return '\n'.join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--date')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--send', action='store_true')
     ap.add_argument('--mode', choices=['monday', 'daily'])
+    ap.add_argument('--plan', action='store_true', help='also print the slot planner preview (Batch 2 prototype, not in the email)')
     args = ap.parse_args()
     day = args.date or today_pt()
 
@@ -116,7 +190,7 @@ def main():
     L = fetch.league_data(week)
     scoring = {k: v for k, v in L['league']['scoring_settings'].items() if v}
     players = fetch.players()
-    games = load_games(week, day, scoring)
+    games = load_games(week, day, scoring, save=not args.date)
     priors = build_priors(players, scoring)
     played = team_games(sched, before=day, finished=True)
 
@@ -153,8 +227,13 @@ def main():
     def lock(pid, dates):
         b = B[pid]
         mus = model.week_mus(b['mu'], [sl_proj.get((pid, d)) for d in dates], MIX)
-        avail = [model.game_avail(b['a'], b['injury'], sl_proj.get((pid, d)), (pid, d) in sl_sits) for d in dates]
+        avail = [model.game_avail(b['a'], b['injury'], sl_proj.get((pid, d)), (pid, d) in sl_sits, i == 0, b['a_season'])
+                 for i, d in enumerate(dates)]
         return model.LockIn(b['mu'], b['sigma'], b['a'], len(dates), mus, avail)
+
+    def avail_left(pid):
+        dates = left.get(B[pid]['team'], [])
+        return lock(pid, dates).avail if dates else []
 
     def week_avg(pid):
         dates = left.get(B[pid]['team'], [])
@@ -178,7 +257,7 @@ def main():
 
     first_day = weeks[week][0]
     mode = args.mode or ('monday' if day <= first_day or datetime.date.fromisoformat(day).weekday() == 0 else 'daily')
-    R = dict(day=day, week=week, mode=mode, week_dates=weeks[week], me=users.get(fetch.ME, 'me'))
+    R = dict(day=day, week=week, mode=mode, week_dates=weeks[week], me=users.get(fetch.ME, 'me'), tie=TIE)
 
     # Who started last night: the lineup at run time (before you change it today). Kept per date,
     # because only a game played from a starting slot counts or can be locked.
@@ -201,8 +280,20 @@ def main():
     # A game with no stored call gets today's call.
     cdir = f'{OUT}/calls'
     calls_on = {}
+    # locks.txt: your own record when you did not follow a call. It wins over the stored call.
+    by_name = {B[pid]['name'].lower(): pid for pid in my_ids}
+    override = {}
+    if os.path.exists(LOCKS):
+        for l in open(LOCKS).read().splitlines():
+            parts = [x.strip() for x in l.split('#')[0].split('|')]
+            if len(parts) == 3 and parts[1].lower() in by_name and parts[2].lower() in ('lock', 'roll'):
+                override[parts[0], by_name[parts[1].lower()]] = 'LOCK' if parts[2].lower() == 'lock' else 'KEEP ROLLING'
+            elif parts != ['']:
+                print(f'locks.txt: skipped line: {l}', file=sys.stderr)
 
     def stored_call(pid, date):
+        if (date, pid) in override:
+            return override[date, pid]
         if date not in calls_on:
             f = f'{cdir}/{date}.txt'
             calls_on[date] = dict(l.split('|')[:2] for l in open(f).read().splitlines() if l) if os.path.exists(f) else {}
@@ -214,14 +305,15 @@ def main():
         if not after:
             return 'FINAL', None
         thr = lock(pid, [date] + after).threshold(len(after))
-        return ('COIN FLIP' if abs(fp - thr) < LOCK_TIE else 'LOCK' if fp >= thr else 'KEEP ROLLING'), thr
+        return ('CLOSE CALL' if abs(fp - thr) < TIE else 'LOCK' if fp >= thr else 'KEEP ROLLING'), thr
 
     favorite = {'me': True}  # set from the win chance below
 
     def locked_on(pid, mine=True):
         def f(date, fp):
             c = stored_call(pid, date) or lock_call(pid, date, fp)[0]
-            return c in ('LOCK', 'COIN FLIP: LOCK') or c == 'COIN FLIP' and favorite['me'] == mine
+            c = (c or '').replace('COIN FLIP', 'CLOSE CALL')  # older saved calls use the old name
+            return c in ('LOCK', 'CLOSE CALL: LOCK') or c == 'CLOSE CALL' and favorite['me'] == mine
         return f
 
     def this_week_games(pid):
@@ -249,6 +341,12 @@ def main():
         return sum((x - m) ** 2 for x in xs) / len(xs)
 
     # ---------- lineup and matchup ----------
+    var = lambda ps: sum(spread(p) for p in ps.values())
+    opp_side = {}
+
+    def win(tot, picks):
+        return model.win_chance(tot, var(picks), opp_side['tot'], var(opp_side['picks']))
+
     def play_matchup():
         rows = lineup_rows(my_ids, value_now)
         tot, picks = lineup.best_lineup(rows)
@@ -262,43 +360,47 @@ def main():
                     wg = model.week_state(this_week_games(pid), lambda d, pid=pid: pid in o_start, locked_on(pid, mine=False))
                     oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
             orows = [(pid, B[pid]['pos'], v) for pid, v in oval.items()]
-            otot, opicks = lineup.best_lineup(orows)
-            var = lambda ps: sum(spread(p) for p in ps.values())
-            chance = model.win_chance(tot, var(picks), otot, var(opicks))
-            tilt = 0.15 if chance < 0.4 else -0.15 if chance > 0.6 else 0.0
-            if tilt:
-                tilted = [(pid, pos, v + tilt * spread(pid) ** 0.5) for pid, pos, v in rows]
-                _, picks = lineup.best_lineup(tilted)
-                tot = sum(value_now(p) for p in picks.values())
-                chance = model.win_chance(tot, var(picks), otot, var(opicks))
-            R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot, chance=chance, tilt=tilt,
-                                their_top=sorted(((B[p]['name'], oval[p]) for p in opicks.values()), key=lambda x: -x[1])[:3])
+            opp_side['tot'], opp_side['picks'] = lineup.best_lineup(orows)
+            R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=opp_side['tot'], chance=win(tot, picks),
+                                their_top=sorted(((B[p]['name'], oval[p]) for p in opp_side['picks'].values()), key=lambda x: -x[1])[:3])
         return tot, picks, rows
 
     tot, picks, rows = play_matchup()
-    if opp and R['matchup']['chance'] < 0.5:  # underdog: coin flips roll, on both sides
+    if opp and R['matchup']['chance'] < 0.5:  # underdog: close calls take the risk, on both sides
         favorite['me'] = False
         week_games = my_week_games()
         tot, picks, rows = play_matchup()
+    fav = favorite['me']
 
-    # Coin flips: a starter whose place in the lineup is worth less than COIN_FLIP points.
-    flips = {}
+    # Close calls: a starter whose place in the lineup is worth less than TIE points. The same rule as a
+    # close lock call: the favorite starts the steadier lineup, the underdog the boom-or-bust one.
+    close, alts = [], [picks]
     for pid in picks.values():
         t2, p2 = lineup.best_lineup([r for r in rows if r[0] != pid])
-        if tot - t2 < COIN_FLIP:
-            other = next(iter(set(p2.values()) - set(picks.values())), None)
-            flips[pid] = dict(other=B[other]['name'] if other else '?', other_v=value_now(other) if other else 0, margin=tot - t2)
+        other = next(iter(set(p2.values()) - set(picks.values())), None)
+        if other and tot - t2 < TIE:
+            close.append((pid, other, tot - t2))
+            alts.append(p2)
+    picks = (min if fav else max)(alts, key=var)
+    tot = sum(value_now(p) for p in picks.values())
+    if opp:
+        R['matchup'].update(me=tot, chance=win(tot, picks))
+    R['fav'] = fav if opp else None
+    started = set(picks.values())
+    R['close'] = [dict(a=B[a]['name'], a_v=value_now(a), a_sd=spread(a) ** 0.5, b=B[b]['name'], b_v=value_now(b), b_sd=spread(b) ** 0.5,
+                       margin=m, start=B[a]['name'] if a in started else B[b]['name']) for a, b, m in close]
+    in_close = {p for a, b, _ in close for p in (a, b)}
 
     R['lineup'] = []
     for i, s in enumerate(lineup.SLOTS):
         pid = picks.get(i)
         b = B.get(pid, {})
         R['lineup'].append(dict(slot=s, pid=pid, name=b.get('name', '—'), value=value_now(pid) if pid else 0,
-                                games=len(left.get(b.get('team'), [])), mu=week_avg(pid) if pid else 0, a=b.get('a', 0),
-                                injury=b.get('injury', ''), flip=flips.get(pid), now=B.get(starters_now[i], {}).get('name') if i < len(starters_now) else None))
+                                games=len(left.get(b.get('team'), [])), mu=week_avg(pid) if pid else 0, avail=avail_left(pid) if pid else [],
+                                injury=b.get('injury', ''), flip=pid in in_close, now=B.get(starters_now[i], {}).get('name') if i < len(starters_now) else None))
     bench = [pid for pid in my_ids if pid not in picks.values()]
-    R['bench'] = [dict(name=B[p]['name'], value=value_now(p), games=len(left.get(B[p]['team'], [])), mu=week_avg(p),
-                       injury=B[p]['injury'], ir=p in reserve) for p in bench]
+    R['bench'] = [dict(name=B[p]['name'], value=value_now(p), games=len(left.get(B[p]['team'], [])), mu=week_avg(p), avail=avail_left(p),
+                       injury=B[p]['injury'], ir=p in reserve, flip=p in in_close) for p in bench]
     R['bench'].sort(key=lambda x: -x['value'])
     R['changes'] = [(B[a]['name'] if a in B else a) for a in set(starters_now) - set(picks.values()) if a != '0']
     R['empty'] = [lineup.SLOTS[i] for i, a in enumerate(starters_now) if a == '0']
@@ -307,7 +409,8 @@ def main():
     # ---------- player cards (model view) ----------
     def card(pid):
         b = B[pid]
-        return dict(name=b['name'], team=b['team'], pos='/'.join(b['pos']), prior=b['prior'], mu=b['mu'], avg=b['avg'],
+        last = [g['fp'] for g in games.get(pid, [])[-3:]]
+        return dict(last3=sum(last) / len(last) if last else None, name=b['name'], team=b['team'], pos='/'.join(b['pos']), prior=b['prior'], mu=b['mu'], avg=b['avg'],
                     n=b['n'], trust=b['trust'], k=b['k'], minutes=b['minutes'], recent_min=b['recent_min'],
                     prior_min=(priors.get(pid) or {}).get('minutes'), a=b['a'], injury=b['injury'], sigma=b['sigma'])
     R['cards'] = {pid: card(pid) for pid in my_ids}
@@ -327,7 +430,16 @@ def main():
     cutoff = (datetime.date.fromisoformat(day) - datetime.timedelta(days=2)).isoformat()
     on_waivers = {pid for t in tx if t.get('drops') and datetime.datetime.fromtimestamp(t['created'] / 1000).date().isoformat() >= cutoff
                   for pid in t['drops']}
-    fa = [pid for pid in B if pid not in rostered and B[pid]['injury'] not in ('Out', 'IR', 'Sus')]
+    def role_up(pid):
+        pm = (priors.get(pid) or {}).get('minutes')
+        return bool(B[pid]['n'] >= 3 and B[pid]['recent_min'] and pm and B[pid]['recent_min'] >= RISE_MIN * pm)
+
+    def rising(pid):
+        """Beating his projection, or a bigger role. The edge: real games say more than the experts do."""
+        b = B[pid]
+        return b['n'] >= 3 and (b['avg'] >= b['prior'] or role_up(pid))
+
+    fa = [pid for pid in B if pid not in rostered and B[pid]['injury'] not in ('Out', 'IR', 'Sus') and rising(pid)]
     fa_vals = sorted(((wval(p), p) for p in fa), reverse=True)[:FA_POOL]
     mine_rows = [(pid, B[pid]['pos'], wval(pid)) for pid in my_ids if pid not in reserve]
     drops = {p for _, p in sorted((v, pid) for pid, _, v in mine_rows)[:DROP_POOL]}
@@ -344,7 +456,7 @@ def main():
         need = (GAIN_CLAIM if claim else GAIN_FA) * (1 if mode == 'monday' else 2)
         moves.append(dict(gain=best[0], add=card(add), drop=B[best[1]]['name'], claim=claim, ok=best[0] >= need,
                           games=len(left.get(B[add]['team'], [])), games_next=len(nxt.get(B[add]['team'], [])),
-                          role_up=B[add]['n'] >= 3 and B[add]['recent_min'] and B[add]['recent_min'] >= 1.25 * ((priors.get(add) or {}).get('minutes') or 99)))
+                          role_up=role_up(add)))
     moves.sort(key=lambda m: -m['gain'])
     R['waivers'] = moves[:3]
 
@@ -359,7 +471,7 @@ def main():
             b, wg = B[pid], week_games[pid]
             r = len(left.get(b['team'], []))
             call, thr = lock_call(pid, yday, g['fp'])
-            if call == 'COIN FLIP':
+            if call == 'CLOSE CALL':
                 call += ': LOCK' if favorite['me'] else ': ROLL'
             call = 'LOCKED' if wg['locked'] and wg['locked_date'] < yday else stored_call(pid, yday) or call
             started = in_lineup(pid, yday)
@@ -410,6 +522,9 @@ def main():
             if pid in prev and abs(B[pid]['mu'] - prev[pid]) >= 2:
                 movers.append((B[pid]['name'], prev[pid], B[pid]['mu']))
     R['movers'] = movers
+
+    if args.plan:
+        print(plan_preview(day, weeks[week], left, B, my_ids, reserve, starters_now, week_games, lock), file=sys.stderr)
 
     subject, html, text = report.render(R)
     os.makedirs(f'{OUT}/out', exist_ok=True)

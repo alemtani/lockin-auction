@@ -12,7 +12,7 @@ STYLE = """<style>
 .lk td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .lk .m{color:#777;font-size:12px}
 </style>"""
-CALL_COLOR = {'LOCK': '#0a7d32', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
+CALL_COLOR = {'LOCK': '#0a7d32', 'CLOSE CALL': '#b26a00', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
 
 
 def d(day):
@@ -59,7 +59,7 @@ def why_pickup(m):
     c = m['add']
     bits = []
     if c['n']:
-        bits.append(f"projected {c['prior']:.0f}, averaging {c['avg']:.0f} in {c['n']} games → we now expect {c['mu']:.0f} (trust in real games {c['trust']:.0%})")
+        bits.append(f"averaging {c['avg']:.0f} in {c['n']} games vs projected {c['prior']:.0f} ({c['avg'] - c['prior']:+.0f}), last 3: {c['last3']:.0f} → we now expect {c['mu']:.0f} (trust in real games {c['trust']:.0%})")
     else:
         bits.append(f"projected {c['mu']:.0f} per game, no games yet")
     if m['role_up']:
@@ -93,15 +93,16 @@ def render(R):
             for i, x in enumerate(res):
                 rows.append([x['name'], f"{x['fp']:.1f}", f"{x['mu']:.0f}", f"{x['min']:.0f}", x['left'], x['call']])
                 colors[i] = CALL_COLOR.get(x['call'].split(':')[0])
-                if x['call'].split(':')[0] in ('LOCK', 'COIN FLIP', 'KEEP ROLLING'):
+                if x['call'].split(':')[0] in ('LOCK', 'CLOSE CALL', 'KEEP ROLLING'):
                     ahead = (f"His last game this week is worth about {x['thr']:.1f}" if x['left'] == 1 else
                              f"With {x['left']} games left, his typical best is {x['thr']:.1f}")
                     gap = abs(x['fp'] - x['thr'])
                     end = {'LOCK': f"{x['fp']:.1f} beats it by {gap:.1f}. Lock it.",
-                           'COIN FLIP: LOCK': f"They are {gap:.1f} apart. That is a coin flip. You are the favorite, so play it safe. Lock it.",
-                           'COIN FLIP: ROLL': f"They are {gap:.1f} apart. That is a coin flip. You are the underdog, so take the chance. Keep rolling.",
+                           'CLOSE CALL: LOCK': f"They are {gap:.1f} apart. That is a close call. You are the favorite, so play it safe. Lock it.",
+                           'CLOSE CALL: ROLL': f"They are {gap:.1f} apart. That is a close call. You are the underdog, so take the chance. Keep rolling.",
                            'KEEP ROLLING': f"That is {gap:.1f} more. Keep rolling."}[x['call']]
                     reasons.append(f"{x['name']}: scored {x['fp']:.1f}. {ahead}. {end}")
+            reasons.append(f"Close call = within {R['tie']:.1f} points. The lineup uses the same rule.") if any(x['call'].startswith('CLOSE CALL') for x in res) else None
             D.table(['Player', 'Score', 'Avg exp', 'Minutes', 'Games left', 'Call'], rows, colors)
             if reasons:
                 D.head('Why')
@@ -117,20 +118,28 @@ def render(R):
         else:
             D.para('No swap worth 3+ points.')
 
-    D.head('Best lineup this week' if R['mode'] == 'monday' else 'Lineup from today')
-    rows = []
-    for x in R['lineup']:
-        note = ', '.join(filter(None, [x['injury'], f"plays {x['a']:.0%} of games" if x['a'] < 0.75 else '']))
-        rows.append([x['slot'], x['name'] + ('*' if x['flip'] else ''), x['games'], f"{x['value']:.1f}", f"{x['mu']:.1f}", note])
+    D.head('Every player this week' if R['mode'] == 'monday' else 'Every player from today')
+
+    def note(x):
+        av = x.get('avail') or []
+        bits = [x['injury']] if x['injury'] else []
+        if av and min(av) < 0.75:
+            bits.append('plays ' + '/'.join(f"{a * 100:.0f}" for a in av) + '%')
+        return ', '.join(bits)
+    rows = [[x['slot'], x['name'] + ('*' if x['flip'] else ''), x['games'], f"{x['value']:.1f}", f"{x['mu']:.1f}", note(x)] for x in R['lineup']]
+    rows += [['IR' if b['ir'] else 'BN', b['name'] + ('*' if b['flip'] else ''), b['games'], f"{b['value']:.1f}", f"{b['mu']:.1f}", note(b)]
+             for b in R['bench']]
     D.table(['Slot', 'Player', 'Games', 'Week score', 'Per game', 'Note'], rows)
-    by_other = {}
-    for x in R['lineup']:
-        if x['flip']:
-            by_other.setdefault((x['flip']['other'], x['flip']['other_v']), []).append(x)
-    for (other, ov), xs in by_other.items():
-        close = ', '.join(f"{x['name']} {x['value']:.1f} ({x['flip']['margin']:.1f} apart)" for x in sorted(xs, key=lambda x: x['flip']['margin']))
-        D.para(f"* Coin flip vs {other} ({ov:.1f}, bench): {close}. News or minutes can change these. "
-               "The daily email rechecks and says if one flips.", muted=True)
+    if R.get('close'):
+        if R.get('fav') is None:
+            rule = 'No matchup found, so the higher score starts.'
+        elif R['fav']:
+            rule = 'You are the favorite, so close calls go to the steadier lineup.'
+        else:
+            rule = 'You are the underdog, so close calls go to the boom-or-bust lineup.'
+        D.para(f"* Close calls (within {R['tie']:.1f} points; the same rule as a close lock call). {rule}", muted=True)
+        D.bullets([f"{c['a']} {c['a_v']:.1f} (swing ±{c['a_sd']:.0f}) vs {c['b']} {c['b_v']:.1f} (±{c['b_sd']:.0f}), "
+                   f"{c['margin']:.1f} apart. Start {c['start']}." for c in R['close']])
     if R.get('empty'):
         D.para(f"Warning: your Sleeper lineup has an empty slot ({', '.join(R['empty'])}). An empty slot scores 0.",
                f"<b>Warning: your Sleeper lineup has an empty slot ({H.escape(', '.join(R['empty']))}).</b> An empty slot scores 0.")
@@ -139,12 +148,10 @@ def render(R):
         D.para(f"Change in Sleeper: {txt}.", f"<b>Change in Sleeper:</b> {H.escape(txt)}.")
     else:
         D.para('Your Sleeper lineup already matches.')
-    if R['bench']:
-        D.para('Bench: ' + ', '.join(f"{b['name']} {b['value']:.1f} ({b['games']}g{', IR' if b['ir'] else ''}{', ' + b['injury'] if b['injury'] and not b['ir'] else ''})" for b in R['bench']), muted=True)
     D.para("'Week score' = expected locked score for the week. It counts the games left and the chance he plays, "
-           "so a 4-game player can beat a better 3-game player.", muted=True)
-    if m and m['tilt']:
-        D.para('You are the ' + ('underdog: close calls go to boom-or-bust players.' if m['tilt'] > 0 else 'favorite: close calls go to steady players.'), muted=True)
+           "so a 4-game player can beat a better 3-game player. 'plays' = his chance to play each game left. "
+           "Status can change during the week: an Out player can be back later, and Sleeper's return date is in these numbers. "
+           "The daily email re-checks every player.", muted=True)
     if m:
         D.para(f"Their best: " + ', '.join(f"{n} {v:.0f}" for n, v in m['their_top']) + '.', muted=True)
 
@@ -153,14 +160,16 @@ def render(R):
         ws = R['waivers']
         good = [w for w in ws if w['ok']]
         if not good:
-            D.para('No move. No free agent beats your roster by enough. The closest:')
+            D.para('No move. No rising free agent beats your roster by enough. The closest:' if ws else
+                   'No free agent is beating his projection or gaining minutes.')
         for i, w in enumerate(ws):
             tag = '' if w['ok'] else ' (not worth it yet)' if w['gain'] >= 0.5 else ' (no gain: he would not crack your top 12)'
             D.para(f"{i + 1}. Add {w['add']['name']} ({w['add']['pos']} {w['add']['team']}), drop {w['drop']}: +{w['gain']:.1f} per week{tag}.",
                    f"<b>{i + 1}. Add {H.escape(w['add']['name'])}</b> ({H.escape(w['add']['pos'])} {H.escape(w['add']['team'])}), drop {H.escape(w['drop'])}: <b>+{w['gain']:.1f}</b> per week{tag}.")
             D.para(why_pickup(w), muted=True)
         bar = "+2 for a free agent, +4 if it costs waiver priority" if R['mode'] == 'monday' else "+4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week)"
-        D.para(f"Gain = how much better your lineup gets this week (plus half of next week). A move needs {bar}.", muted=True)
+        D.para(f"Only rising players are listed: beating their projection, or minutes up. "
+               f"Gain = how much better your lineup gets this week (plus half of next week). A move needs {bar}.", muted=True)
 
     if R.get('movers'):
         D.head('Outlook changes this week')
@@ -169,9 +178,10 @@ def render(R):
     D.head('Your players: projection vs real games')
     rows = []
     for c in sorted(R['cards'].values(), key=lambda c: -c['mu']):
-        rows.append([c['name'], f"{c['prior']:.1f}", f1(c['avg']), c['n'], f"{c['mu']:.1f}", f"{c['trust']:.0%}", f"{c['k']:.0f}"])
-    D.table(['Player', 'Projected', 'Real avg', 'Games', 'Now', 'Trust real', '50/50 at'], rows)
-    D.para("'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. "
+        rows.append([c['name'], f"{c['prior']:.1f}", f1(c['avg']), f1(c['last3']), c['n'], f"{c['mu']:.1f}", f"{c['trust']:.0%}", f"{c['k']:.0f}"])
+    D.table(['Player', 'Projected', 'Real avg', 'Last 3', 'Games', 'Now', 'Trust real', '50/50 at'], rows)
+    D.para("'Real avg' counts every game, locked or not, so a run of duds pulls 'Now' down. 'Last 3' shows the recent trend. "
+           "'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. "
            "Steady veterans take ~10 games; uncertain players switch faster.", muted=True)
 
     h, t = D.out()
