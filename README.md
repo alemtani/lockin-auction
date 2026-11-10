@@ -29,6 +29,6 @@ A daily email at 5:00 PT. Every morning the slot planner (`season/planner.py`) m
 - `season/planner.py`: the slot planner. Each player gets one home slot. A score locks when it beats what the rest of the roster gives up without him.
 - `season/backtest.py`: replays finished weeks for all rosters. On weeks 1 to 3 the planner scored +12 per week over the old per-player calls.
 - `data/season/`: game log, one belief snapshot per day (`history/`), each email (`out/`), and the planner's lock calls (`planner_locks/`).
-- `data/season/locks.txt`: your own lock record, for days you did not follow the email. Sleeper does not share locks.
+- `data/season/locks.txt`: your own lock record, for days you did not follow the email. Sleeper does not share locks. Add a line from the GitHub app with the **lock record** action (`season/add_lock.py`): player, lock or roll, and optionally the game date and a resend of today's email.
 - Tests: `python3 -m unittest discover season`.
 - `.github/workflows/daily.yml` runs it every morning and commits `data/season/`.

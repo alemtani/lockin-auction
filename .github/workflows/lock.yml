@@ -1,0 +1,58 @@
+name: lock record
+# Record a lock you made against the email's call (or a call you skipped). Run it from the GitHub app:
+# Actions > lock record > Run workflow. It adds a line to data/season/locks.txt and commits it.
+on:
+  workflow_dispatch:
+    inputs:
+      player:
+        description: Player (any part of the name, e.g. durant)
+        required: true
+        type: string
+      call:
+        description: What you did
+        required: true
+        type: choice
+        options: [lock, roll]
+      date:
+        description: Game date YYYY-MM-DD (blank = his latest game)
+        required: false
+        type: string
+        default: ''
+      resend_email:
+        description: Send today's email again with this change
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: lockin-data  # same group as the daily email, so two runs never push at once
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Add the line
+        run: python3 season/add_lock.py --player "$PLAYER" --call "$CALL" --date "$DATE"
+        env:
+          PLAYER: ${{ inputs.player }}
+          CALL: ${{ inputs.call }}
+          DATE: ${{ inputs.date }}
+      - name: Send today's email again
+        if: inputs.resend_email
+        run: python3 season/daily.py --send
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      - name: Save
+        run: |
+          git config user.name 'lockin-bot'
+          git config user.email 'lockin-bot@users.noreply.github.com'
+          git add data/season
+          git diff --cached --quiet || git commit -m "Lock record: $PLAYER $CALL"
+          git pull --rebase -q
+          git push
+        env:
+          PLAYER: ${{ inputs.player }}
+          CALL: ${{ inputs.call }}

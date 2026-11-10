@@ -1,5 +1,6 @@
 # Your own lock record, for days you did not follow the email's call.
 # Sleeper does not share locks, so the email assumes you followed every call unless this file says otherwise.
+# From your phone: GitHub app > Actions > lock record > Run workflow. It adds the line for you.
 # One line per game: date of the game | player name as in the email | lock or roll
 # Example:
 # 2026-11-10|Kevin Durant|lock
