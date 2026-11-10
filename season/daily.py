@@ -317,14 +317,12 @@ def main():
 
     # ---------- the slot planner: this morning's lock calls and today's lineup ----------
     dates = [d for d in weeks[week] if d >= day]
-    pv = {}
-    for pid in my_ids:
-        if pid in reserve:
-            continue
-        ds = left.get(B[pid]['team'], [])
+    def pvrow(pid, ds):
+        """The planner's view of one player: his games on dates ds as (mu, chance he plays, sigma)."""
         Lk = lock(pid, ds) if ds else None
-        pv[pid] = dict(name=B[pid]['name'], pos=B[pid]['pos'],
-                       games={d: (Lk.mus[i], Lk.avail[i], B[pid]['sigma']) for i, d in enumerate(ds)} if ds else {})
+        return dict(name=B[pid]['name'], pos=B[pid]['pos'],
+                    games={d: (Lk.mus[i], Lk.avail[i], B[pid]['sigma']) for i, d in enumerate(ds)} if ds else {})
+    pv = {pid: pvrow(pid, left.get(B[pid]['team'], [])) for pid in my_ids if pid not in reserve}
     holder = {i: p for i, p in enumerate(starters_now) if p in pv}
     score, locked = {}, set()
     for i, p in holder.items():
@@ -355,9 +353,13 @@ def main():
     R['calls'] = []
     for c in calls:
         nxt_game = next((d for d in dates if d > day and d in pv[c['p']]['games']), None)
+        ps = c.get('plan_slot')
+        plan = notes[ps] if ps is not None and ps in notes else None
         R['calls'].append(dict(c, name=nm(c['p']), slot=lineup.SLOTS[c['slot']] if c['slot'] is not None else None,
                                from_slot=lineup.SLOTS[c['from_slot']] if c.get('from_slot') is not None else None,
-                               next_game=dn(nxt_game) if nxt_game else None))
+                               next_game=dn(nxt_game) if nxt_game else None,
+                               plan_slot=lineup.SLOTS[ps] if plan else None, plan_worth=plan['worth'] if plan else None,
+                               plan_tries=[f"{dn(g[1])} {B[g[0]]['name'].split()[-1]}" for g in plan['plan']] if plan else []))
     R['plan'] = []
     later = dates[1:]
     for i, slot in enumerate(lineup.SLOTS):
@@ -394,9 +396,22 @@ def main():
             R['moves'].append(f"{slot}: {nm(want) or 'empty'} (now {nm(now) or 'empty'})")
     R['empty'] = [lineup.SLOTS[i] for i, a in enumerate(starters_now) if a == '0']
     open_ = [i for i in range(len(lineup.SLOTS)) if i not in locked]
-    st = planner.streams({q: v for q, v in pv.items() if q not in {new[i] for i in locked if i in new}}, dates, open_)
-    R['week_plan'] = [dict(slot=lineup.SLOTS[i], worth=planner.fresh_value(st[i]),
-                           tries=[f"{dn(g[1])} {B[g[0]]['name'].split()[-1]}" for g in st[i]]) for i in open_]
+    keeps = {c['p']: c for c in calls if c['kind'] == 'keep'}
+    if not notes:  # no games today: plan the open slots from the lineup as it stands
+        hold = {new[i] for i in locked if i in new} | {p for p in new.values() if p in score}
+        st = planner.streams({q: v for q, v in pv.items() if q not in hold}, dates, [i for i in open_ if new.get(i) not in score])
+        notes = {i: dict(worth=planner.fresh_value(g), plan=g) for i, g in st.items()}
+    R['week_plan'] = []
+    for i in open_:
+        p = new.get(i)
+        if i in notes:
+            R['week_plan'].append(dict(slot=lineup.SLOTS[i], worth=notes[i]['worth'],
+                                       tries=[f"{dn(g[1])} {B[g[0]]['name'].split()[-1]}" for g in notes[i]['plan']]))
+        elif p in score:
+            nx = next((d for d in dates if d > day and d in pv[p]['games']), None)
+            bar = keeps[p]['bar'] if p in keeps else None
+            R['week_plan'].append(dict(slot=lineup.SLOTS[i], held=f"{nm(p)} holds {score[p]:.1f}" + (f" (needs {bar:.0f})" if bar else '')
+                                       + (f", decided {dn(nx)}" if nx else ', it counts')))
 
     # ---------- player cards (model view) ----------
     def card(pid):
@@ -433,17 +448,34 @@ def main():
 
     fa = [pid for pid in B if pid not in rostered and B[pid]['injury'] not in ('Out', 'IR', 'Sus') and rising(pid)]
     fa_vals = sorted(((wval(p), p) for p in fa), reverse=True)[:FA_POOL]
-    mine_rows = [(pid, B[pid]['pos'], wval(pid)) for pid in my_ids if pid not in reserve]
-    drops = {p for _, p in sorted((v, pid) for pid, _, v in mine_rows)[:DROP_POOL]}
-    base = lineup.team_value(mine_rows)[0]
+    # Gain = what the slot planner expects from your open slots this week, plus half of next week's 9 slots,
+    # with him in place of the drop. A score already locked or kept stays, so those players are not drops.
+    # Depth counts: your 13th and 14th players get tries too.
+    fixed = {new[i] for i in locked if i in new} | {c['p'] for c in calls if c['kind'] == 'keep'}
+    w_slots = [i for i in range(len(lineup.SLOTS)) if i not in locked and new.get(i) not in fixed]
+    nx_dates = sorted({d for ds in nxt.values() for d in ds})
+    now_pool = {q: v for q, v in pv.items() if q not in fixed}
+    nxt_pool = {pid: pvrow(pid, nxt.get(B[pid]['team'], [])) for pid in my_ids if pid not in reserve}
+
+    def roster_value(add=None, drop=None):
+        a = {q: v for q, v in now_pool.items() if q != drop}
+        b = {q: v for q, v in nxt_pool.items() if q != drop}
+        if add:
+            a[add] = pvrow(add, left.get(B[add]['team'], []))
+            b[add] = pvrow(add, nxt.get(B[add]['team'], []))
+        return planner.total(a, dates, w_slots) + NEXT_WEEK * planner.total(b, nx_dates, list(range(len(lineup.SLOTS))))
+    mine_rows = [(pid, wval(pid)) for pid in my_ids if pid not in reserve and pid not in fixed]
+    drops = {p for _, p in sorted((v, pid) for pid, v in mine_rows)[:DROP_POOL]}
+    base = roster_value()
     moves = []
     for v, add in fa_vals:
         best = None
         for d in drops:
-            roster = [r for r in mine_rows if r[0] != d] + [(add, B[add]['pos'], v)]
-            g = lineup.team_value(roster)[0] - base
+            g = roster_value(add, d) - base
             if best is None or g > best[0]:
                 best = (g, d)
+        if best is None:
+            continue
         claim = add in on_waivers
         need = (GAIN_CLAIM if claim else GAIN_FA) * (1 if mode == 'monday' else 2)
         moves.append(dict(gain=best[0], add=card(add), drop=B[best[1]]['name'], claim=claim, ok=best[0] >= need,
@@ -456,7 +488,7 @@ def main():
     if mode == 'daily':
         R['yesterday'] = yday
         callby = {c['p']: c for c in calls}
-        label = {'lock': 'LOCK', 'roll': 'ROLL', 'keep': 'WAIT', 'drop': 'DROP'}
+        label = {'lock': 'LOCK', 'roll': 'ROLL', 'keep': 'WAIT', 'hold': 'HOLD', 'drop': 'DROP'}
         res = []
         for pid in my_ids:
             g = next((g for g in games.get(pid, []) if g['date'] == yday), None)

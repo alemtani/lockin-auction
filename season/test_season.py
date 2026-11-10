@@ -228,6 +228,49 @@ class Planner(unittest.TestCase):
             self.assertEqual(calls[0]['kind'], kind)
             self.assertTrue(calls[0]['close'])
 
+    def test_waiting_player_stays_put(self):
+        # Last night: a (C/PF, holds 50, plays day 3) sat at PF. Today c (C) plays. a stays at PF, c takes C.
+        pl = self.pool(a=(['C', 'PF'], {3: 30}), c=(['C'], {2: 25, 3: 25}))
+        new, _, calls = self.P.morning(2, [2, 3], {4: 'a'}, {'a': 50.0}, set(), pl, lock_now=99)
+        self.assertEqual((new.get(4), new.get(6)), ('a', 'c'))
+        self.assertEqual(calls[0]['kind'], 'keep')
+
+    def test_big_waiting_score_locks_now(self):
+        pl = self.pool(a=(['C'], {3: 30}))
+        locked = set()
+        _, _, calls = self.P.morning(2, [2, 3], {6: 'a'}, {'a': 70.0}, locked, pl)
+        self.assertEqual((calls[0]['kind'], calls[0]['now']), ('lock', True))
+        self.assertEqual(locked, {6})
+
+    def test_lock_takes_the_most_restrictive_slot(self):
+        # A PG with nobody else: every slot costs the same, so he locks at PG, not G or UTIL.
+        pl = self.pool(a=(['PG'], {2: 30, 3: 30}))
+        _, _, calls = self.P.morning(2, [2, 3], {7: 'a'}, {'a': 80.0}, set(), pl)
+        self.assertEqual(calls[0]['slot'], 0)
+
+    def test_low_score_holds_until_his_slot_is_needed(self):
+        # a (C) holds 5, below his bar, and plays day 3. Nobody else plays C today: he holds.
+        pl = self.pool(a=(['C'], {3: 30}), g=(['PG'], {2: 20}))
+        new, _, calls = self.P.morning(2, [2, 3], {6: 'a'}, {'a': 5.0}, set(), pl)
+        self.assertEqual((calls[0]['kind'], new.get(6)), ('hold', 'a'))
+        # Now c (C) plays today, both UTIL slots are locked, so c needs C: a is benched and his score is gone.
+        pl = self.pool(a=(['C'], {3: 30}), c=(['C'], {2: 25}), u=(['PG'], {}), v=(['PG'], {}))
+        new, _, calls = self.P.morning(2, [2, 3], {6: 'a', 7: 'u', 8: 'v'}, {'a': 5.0, 'u': 40.0, 'v': 40.0}, {7, 8}, pl)
+        self.assertEqual((calls[0]['kind'], new.get(6)), ('drop', 'c'))
+
+    def test_today_player_displaces_the_lowest_score(self):
+        # g (PG) plays today. G and UTIL hold 30 and 8, UTIL 2 is locked: g takes the UTIL with 8.
+        pl = self.pool(a=(['SG'], {3: 30}), b=(['SG'], {3: 30}), u=(['C'], {}), g=(['PG'], {2: 25}))
+        holder = {2: 'a', 7: 'b', 8: 'u'}
+        locked = {8}
+        for t in (0, 1, 3, 4, 5, 6):  # every other slot locked by dummies
+            pl[f'x{t}'] = dict(name='x', pos=['PG', 'SG', 'SF', 'PF', 'C'], games={})
+            holder[t] = f'x{t}'
+            locked.add(t)
+        score = {'a': 30.0, 'b': 8.0, 'u': 40.0, **{f'x{t}': 40.0 for t in (0, 1, 3, 4, 5, 6)}}
+        new, _, _ = self.P.morning(2, [2, 3], holder, score, locked, pl, lock_now=99)
+        self.assertEqual((new.get(2), new.get(7)), ('a', 'g'))
+
     def test_benched_score_is_gone(self):
         gs = [dict(date='mon', fp=30.0)]
         st = model.week_state(gs, lambda d: True, lambda d, fp: False, alive=lambda d: False)

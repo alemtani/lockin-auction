@@ -12,7 +12,7 @@ STYLE = """<style>
 .lk td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .lk .m{color:#777;font-size:12px}
 </style>"""
-CALL_COLOR = {'LOCK': '#0a7d32', 'ROLL': '#1d5fbf', 'WAIT': '#b26a00', 'DROP': '#999', 'CLOSE CALL': '#b26a00', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
+CALL_COLOR = {'LOCK': '#0a7d32', 'ROLL': '#1d5fbf', 'WAIT': '#b26a00', 'HOLD': '#999', 'DROP': '#999', 'CLOSE CALL': '#b26a00', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
 
 
 def d(day):
@@ -71,20 +71,34 @@ def why_pickup(m):
 
 
 def call_line(c, tie):
-    """One morning call in plain words."""
-    n, x = c['name'], c['x']
-    close = f" Close call ({abs(x - c['bar']):.1f} apart, within {tie:.1f})." if c.get('close') else ''
+    """One morning call in plain words, with the numbers behind it."""
+    n, x, bar = c['name'], c['x'], c.get('bar')
+    close = f" Close call ({abs(x - bar):.1f} apart, within {tie:.1f})." if c.get('close') else ''
+    nxt = f"{c['next_game']}, his next game" if c.get('next_game') else None
     if c['kind'] == 'lock':
         moved = f", moved from {c['from_slot']}" if c['from_slot'] != c['slot'] else ''
+        if c.get('now'):
+            return (f"Lock {n} ({x:.1f}) at {c['slot']} now{moved}. He needs {bar:.0f}, so it is safe by {x - bar:.0f}. "
+                    f"Waiting for his next game{' (' + c['next_game'] + ')' if c.get('next_game') else ''} gains nothing, "
+                    "and a missed morning would let that game replace it.")
         why = ' You are the favorite, so play it safe.' if c.get('close') else ''
-        return f"Lock {n} ({x:.1f}) at {c['slot']}{moved}. He needed {c['bar']:.1f}.{close}{why}"
+        return f"Lock {n} ({x:.1f}) at {c['slot']}{moved}. He needed {bar:.1f}.{close}{why}"
     if c['kind'] == 'roll':
         why = ' You are the underdog, so take the chance.' if c.get('close') else ''
-        return f"Don't lock {n} ({x:.1f}). He plays today, and that game replaces it. Locking needed {c['bar']:.1f}.{close}{why}"
+        return f"Don't lock {n} ({x:.1f}). He plays today, and that game replaces it. Locking needed {bar:.1f}.{close}{why}"
     if c['kind'] == 'keep':
-        when = f"on {c['next_game']}, his next game" if c['next_game'] else 'never: he has no games left, so it counts'
-        return f"{n} holds {x:.1f} at {c['slot']}. No game today, so no call yet. It is decided {when}."
-    return f"Bench {n}: his {x:.1f} is worth less than a fresh try in his slot. Benching drops it."
+        if not nxt:
+            return f"{n} holds {x:.1f} at {c['slot']}. He has no games left, so it counts."
+        return (f"{n} holds {x:.1f} at {c['slot']} and needs {bar:.0f}. No game today, so it waits. "
+                f"Lock it on {nxt}, unless the bar moves.")
+    plan = ''
+    if c.get('plan_slot'):
+        plan = (f" Fresh, {c['plan_slot']} is worth {c['plan_worth']:.0f} from these tries: {', '.join(c['plan_tries'])}.")
+    if c['kind'] == 'hold':
+        return (f"{n} holds {x:.1f} at {c['slot']} for today only. He needs {bar:.0f}, but nobody else plays {c['slot']} today, "
+                f"so keeping him costs nothing. Expect to bench him {('on ' + nxt) if nxt else 'later'}.{plan}")
+    need = f", and he needs {bar:.0f}" if bar is not None else ''
+    return f"Bench {n}: his {x:.1f} is below the bar{need}. A player who plays today needs his slot. Benching drops it.{plan}"
 
 
 def render(R):
@@ -111,17 +125,19 @@ def render(R):
             D.table(['Player', 'Score', 'Avg exp', 'Minutes', 'Call'], rows, colors)
 
     D.head('Lock calls this morning')
-    order = {'lock': 0, 'roll': 1, 'drop': 2, 'keep': 3}
+    order = {'lock': 0, 'roll': 1, 'drop': 2, 'hold': 3, 'keep': 4}
     cs = sorted(R.get('calls') or [], key=lambda c: (order[c['kind']], -c['x']))
     if cs:
         D.bullets([call_line(c, R['tie']) for c in cs])
     else:
         D.para('None. No player has an open score.')
     D.para("A score can wait until the player's next game. The call comes the morning he plays again: lock it, "
-           "or today's game replaces it. 'Needed' = what your other slots give up without him, so the bar depends on "
-           "your whole roster, not just his own games. Lock in the slot that costs the rest of the roster least, "
-           "usually the most restrictive one. Sleeper doesn't share your locks, so this email assumes you followed "
-           "every call. If you didn't, add a line to data/season/locks.txt.", muted=True)
+           "or today's game replaces it. A waiting score locks now when it beats its bar by 10 or more. "
+           "'Needs' = what your other slots give up without him, so the bar depends on your whole roster, "
+           "not just his own games. A lock goes in the most restrictive slot he fits. A waiting player stays in his "
+           "slot, and a score below its bar is benched only when someone who plays today needs the slot. "
+           "Sleeper doesn't share your locks, so this email assumes you followed every call. If you didn't, "
+           "add a line to data/season/locks.txt.", muted=True)
 
     D.head("Today's lineup")
 
@@ -155,9 +171,11 @@ def render(R):
 
     if R.get('week_plan'):
         D.head('Week plan (re-planned every morning)')
-        D.bullets([f"{w['slot']} (worth {w['worth']:.0f}): " + (', '.join(w['tries']) or 'no games left') for w in R['week_plan']])
+        D.bullets([f"{w['slot']}: {w['held']}" if 'held' in w else
+                   f"{w['slot']} (worth {w['worth']:.0f}): " + (', '.join(w['tries']) or 'no games left') for w in R['week_plan']])
         D.para("Who tries each open slot, by day. Each player has one home slot, so his games count once. "
-               "'Worth' = what the slot can expect from these tries.", muted=True)
+               "'Worth' = what the slot can expect from these tries: lock a try that beats what the later tries "
+               "can still expect, else roll to the next one.", muted=True)
     if m:
         D.para(f"Their best: " + ', '.join(f"{n} {v:.0f}" for n, v in m['their_top']) + '.', muted=True)
 
@@ -169,13 +187,16 @@ def render(R):
             D.para('No move. No rising free agent beats your roster by enough. The closest:' if ws else
                    'No free agent is beating his projection or gaining minutes.')
         for i, w in enumerate(ws):
-            tag = '' if w['ok'] else ' (not worth it yet)' if w['gain'] >= 0.5 else ' (no gain: he would not crack your top 12)'
-            D.para(f"{i + 1}. Add {w['add']['name']} ({w['add']['pos']} {w['add']['team']}), drop {w['drop']}: +{w['gain']:.1f} per week{tag}.",
-                   f"<b>{i + 1}. Add {H.escape(w['add']['name'])}</b> ({H.escape(w['add']['pos'])} {H.escape(w['add']['team'])}), drop {H.escape(w['drop'])}: <b>+{w['gain']:.1f}</b> per week{tag}.")
+            g = round(w['gain'], 1) + 0.0  # no '-0.0'
+            tag = '' if w['ok'] else ' (not enough)' if g > 0 else ' (no gain)' if g == 0 else ' (worse)'
+            D.para(f"{i + 1}. Add {w['add']['name']} ({w['add']['pos']} {w['add']['team']}), drop {w['drop']}: {g:+.1f} per week{tag}.",
+                   f"<b>{i + 1}. Add {H.escape(w['add']['name'])}</b> ({H.escape(w['add']['pos'])} {H.escape(w['add']['team'])}), drop {H.escape(w['drop'])}: <b>{g:+.1f}</b> per week{tag}.")
             D.para(why_pickup(w), muted=True)
         bar = "+2 for a free agent, +4 if it costs waiver priority" if R['mode'] == 'monday' else "+4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week)"
         D.para(f"Only rising players are listed: beating their projection, or minutes up. "
-               f"Gain = how much better your lineup gets this week (plus half of next week). A move needs {bar}.", muted=True)
+               f"Gain = how much more your open slots expect this week with him instead, plus half of next week, "
+               f"from the same slot plan as the lock calls. Your 13th and 14th players count, because they get tries. "
+               f"A move needs {bar}.", muted=True)
 
     if R.get('movers'):
         D.head('Outlook changes this week')

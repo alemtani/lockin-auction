@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import fetch, lineup, model, planner
 
 MU_SHIFT = float(os.environ.get('MU_SHIFT', 0))  # experiment: points added to every estimate
+LOCK_NOW = float(os.environ.get('LOCK_NOW', planner.LOCK_NOW))  # experiment: lock-now margin (99 = never)
 HEALTHY_A = 0.93  # chance he plays when he played his team's last game
 MISSED_A = (0.3, 0.6)  # missed his team's last game: next game, later games
 
@@ -103,7 +104,10 @@ def run():
                 holder, score, locked = {}, {}, set()
                 for i, d in enumerate(dates):
                     V = view(d)
-                    holder, _, _ = planner.morning(d, dates[i:], holder, score, locked, V)
+                    before = dict(holder)
+                    holder, _, _ = planner.morning(d, dates[i:], holder, score, locked, V, lock_now=LOCK_NOW)
+                    if i:
+                        ENDS['plan']['moves'] += sum(before.get(s) != holder.get(s) for s in range(len(SL)))
                     for p in list(score):
                         if p not in holder.values():
                             del score[p]
@@ -180,6 +184,7 @@ def main():
         e = ENDS[k]
         print(f"  {name:15} {e['locked'] / e['weeks']:.1f} ({e['locked_pts'] / max(e['locked'], 1):.1f}) / "
               f"{e['latest'] / e['weeks']:.1f} ({e['latest_pts'] / max(e['latest'], 1):.1f}) / {e['empty'] / e['weeks']:.1f}")
+    print(f"  Planner lineup changes per week (slots whose player changed, after day 1): {ENDS['plan']['moves'] / ENDS['plan']['weeks']:.1f}")
     print('\nBy week (all rosters, average):')
     for wk, rs in sorted(results.items()):
         print(f'  week {wk}: ' + ', '.join(f'{name} {sum(v[k] for v in rs.values()) / len(rs):.1f}' for k, name in cols))

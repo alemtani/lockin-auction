@@ -122,39 +122,88 @@ def lock_options(p, s, days, holder, score, locked, players):
     return sorted(out)
 
 
-def morning(day, days, holder, score, locked, players, tie=0.0, safe=True):
-    """The morning move: lock calls, then today's starter for every open slot.
+LOCK_NOW = 10.0  # points: a waiting score this far above its bar locks now, so a missed morning can't lose it
+SLOT_TIE = 1.0   # points: lock in the most restrictive slot unless another slot's bar is lower by more than this
+MOVE_TIE = 1.0   # points: a waiting player moves to another slot only if that is worth more than this
+
+
+def rank(s):
+    """How restrictive a slot is: C, PG, SG, SF, PF (1 position) before G, F (2) before UTIL."""
+    ok = lineup.SLOT_OK[SLOTS[s]]
+    return len(ok) if ok else 99
+
+
+def pick(opts):
+    """opts: [(gap, bar, slot)]. The most restrictive slot within SLOT_TIE of the best gap."""
+    g = max(o[0] for o in opts)
+    return min((o for o in opts if o[0] >= g - SLOT_TIE), key=lambda o: (rank(o[2]), -o[0]))
+
+
+def seat(rows, slots, cur, held):
+    """Seat every player in rows (pid, positions) in `slots`, moving as few as possible. Returns slot -> pid.
+
+    cur: slot -> pid now. held: pid -> score he holds now. Seated players count most, then players left in
+    their own slot. Then a slot with no score holder before one with a holder, and a low score before a high one,
+    so the holders who stay keep the most.
+    """
+    idx = {t: j for j, t in enumerate(slots)}
+    dp = {0: (0.0, ())}
+    for pid, pos in rows:
+        nxt = {}
+        for mask, (tot, picks) in dp.items():
+            for t in slots:
+                j = idx[t]
+                if mask >> j & 1 or not lineup.fits(pos, SLOTS[t]):
+                    continue
+                q = cur.get(t)
+                v = tot + 1000 + (10 if q == pid else 0) - (1 + held[q] / 100 if q in held and q != pid else 0)
+                m2 = mask | 1 << j
+                if m2 not in nxt or nxt[m2][0] < v:
+                    nxt[m2] = (v, picks + ((t, pid),))
+        dp = nxt or dp
+    return dict(max(dp.values(), key=lambda x: x[0])[1])
+
+
+def morning(day, days, holder, score, locked, players, tie=0.0, safe=True, lock_now=LOCK_NOW):
+    """The morning move: lock calls, then today's starter for every open slot, with as few moves as possible.
 
     holder: slot -> pid. score: pid -> current score (started players only). locked: set of slots.
     days: the week's game days from today on. Returns (new holder, notes per slot, calls).
     tie, safe: a close call is a lock within `tie` points of its bar. safe (the favorite) locks it,
     otherwise (the underdog) rolls it. The same rule as the lineup and the old lock calls.
 
-    1. Lock calls, only for holders who play today: lock now or today's game replaces the score.
-       Lock in slot t when his score plus the plan for the other open slots (without him) beats the plan
-       with him rolling. A holder with no game today needs no call yet: his score waits.
-    2. A holder with a score and no game today keeps it if his score plus the rest of the plan without him
-       beats the plan with him back in the pool. He sits in the slot where that works best.
-    3. Every other open slot gets the plan's game for today, and an empty slot takes any game today
-       (a free try: a bad score costs nothing, you can still replace it).
-    calls: one dict per holder with an unlocked score: kind = lock, roll, keep (no game today, it waits)
-    or drop (benched: a fresh try is worth more), with score x, bar, slot and from_slot.
+    1. Lock calls, highest score first. A holder who plays today: lock now, or today's game replaces the score.
+       A holder with no game today locks now only if his score beats the bar by `lock_now` or more.
+       Otherwise it waits: no call is needed before his next game. Bar = what the other open slots lose
+       without him and without the slot he locks. He locks in the most restrictive slot unless another costs
+       clearly less (SLOT_TIE). Each call sees the locks made before it.
+    2. A waiting holder whose score beats his bar ('keep') stays in his slot. He moves only if another slot
+       is worth more than MOVE_TIE more for the rest of the roster.
+    3. Today's games: the plan's game for each other open slot, then free tries for empty slots.
+       They take open slots with as few moves as possible.
+    4. A waiting holder below his bar keeps his score only while his slot is not needed today ('hold').
+       If a player who plays today needs it, he is benched and the score is gone ('drop').
+       A starter with nothing to do today stays where he is.
+    calls: one dict per holder with an unlocked score: kind = lock (now=True if he has no game today), roll,
+    keep, hold or drop, with score x, bar, slot, from_slot, and for hold/drop the slot that plans his games.
     Changes holder and locked in place.
     """
     calls = []
-    for x, p in sorted(((score[p], p) for s, p in holder.items() if s not in locked and p in score
-                        and day in players[p]['games']), reverse=True):
+    for x, p in sorted(((score[p], p) for s, p in holder.items() if s not in locked and p in score), reverse=True):
         s = next((t for t, q in holder.items() if q == p and t not in locked), None)  # he may have moved
         if s is None:
             continue
+        plays = day in players[p]['games']
         opts = [(x - bar, bar, t) for bar, t in lock_options(p, s, days, holder, score, locked, players)]
         if not opts:
             continue
-        gap, bar, t = max(opts)
+        gap, bar, t = pick(opts)
         close = abs(gap) < tie
-        if gap < (-tie if safe else tie):
+        if plays and gap < (-tie if safe else tie):
             calls.append(dict(p=p, kind='roll', x=x, bar=bar, slot=t, from_slot=s, close=close))
             continue
+        if not plays and gap < lock_now:
+            continue  # it waits; step 2 decides where he sits today
         if t != s:
             q = holder.get(t)
             holder[t] = p
@@ -164,46 +213,54 @@ def morning(day, days, holder, score, locked, players, tie=0.0, safe=True):
                 del holder[s]
                 score.pop(q, None)
         locked.add(t)
-        calls.append(dict(p=p, kind='lock', x=x, bar=bar, slot=t, from_slot=s, close=close))
+        calls.append(dict(p=p, kind='lock', x=x, bar=bar, slot=t, from_slot=s, close=close and plays, now=not plays))
 
     open_ = [s for s in range(len(SLOTS)) if s not in locked]
     pinned = {holder[s] for s in locked}
     pool = {p: v for p, v in players.items() if p not in pinned}
     new = {s: holder[s] for s in locked}
     used = set(pinned)
-    keep = sorted(((score[p], p) for s, p in holder.items() if s in open_ and p in score and p in pool
-                   and day not in pool[p]['games']), reverse=True)
+    cur = {s: holder[s] for s in open_ if s in holder}
+    waiting = sorted(((score[p], p, s) for s, p in cur.items() if p in score and p in pool
+                      and day not in pool[p]['games']), reverse=True)
     free = list(open_)
-    for x, p in keep:
+    below = []
+    for x, p, s0 in waiting:
         avail = {q: v for q, v in pool.items() if q not in used}
         base = total(avail, days, free)
-        opts = [(x + total(avail, days, [t for t in free if t != s], exclude={p}), s) for s in free
-                if lineup.fits(pool[p]['pos'], SLOTS[s])]
-        if opts and max(opts)[0] >= base:
-            s = max(opts)[1]
-            new[s] = p
-            used.add(p)
-            free.remove(s)
-            calls.append(dict(p=p, kind='keep', x=x, bar=base - (max(opts)[0] - x), slot=s, close=False))
-        else:
-            calls.append(dict(p=p, kind='drop', x=x, bar=base - (max(opts)[0] - x) if opts else None, slot=None, close=False))
-    st = streams({q: v for q, v in pool.items() if q not in used}, days, free)
-    for s in free:  # the plan's game for today
-        if st[s] and st[s][0][1] == day and st[s][0][0] not in used:
-            new[s] = st[s][0][0]
-            used.add(new[s])
-    left = [s for s in free if s not in new]
-    rows = [(p, v['pos'], v['games'][day][0] * v['games'][day][1]) for p, v in pool.items()
-            if p not in used and day in v['games']]
-    for s, p in assign(rows, [s for s in left if holder.get(s) not in score]).items():
+        opts = {s: x + total(avail, days, [t for t in free if t != s], exclude={p}) for s in free
+                if lineup.fits(pool[p]['pos'], SLOTS[s])}
+        best = max(opts, key=opts.get) if opts else None
+        if best is None or opts[best] < base:
+            below.append((x, p, s0, base - (opts[best] - x) if opts else None))
+            continue
+        s = s0 if s0 in opts and opts[s0] >= opts[best] - MOVE_TIE else best
         new[s] = p
         used.add(p)
-    for s in left:  # nobody plays here today: no reason to bench the holder
-        if s not in new and holder.get(s) and holder[s] not in used:
-            new[s] = holder[s]
-            used.add(holder[s])
+        free.remove(s)
+        calls.append(dict(p=p, kind='keep', x=x, bar=base - (opts[s] - x), slot=s, from_slot=s0, close=False))
+    held = dict(score)
+    st = streams({q: v for q, v in pool.items() if q not in used}, days, free)
+    today = []
+    for s in free:  # the plan's game for today
+        if st[s] and st[s][0][1] == day and st[s][0][0] not in used:
+            today.append((st[s][0][0], s))
+            used.add(st[s][0][0])
+    left = [s for s in free if s not in {t for _, t in today}]
+    rows = [(p, v['pos'], v['games'][day][0] * v['games'][day][1]) for p, v in pool.items()
+            if p not in used and day in v['games']]
+    for s, p in assign(rows, [s for s in left if cur.get(s) not in held]).items():  # free tries
+        today.append((p, s))
+        used.add(p)
+    new.update(seat([(p, pool[p]['pos']) for p, _ in today], free, cur, held))
+    for s in free:  # nobody plays here today: the starter stays (a holder below his bar keeps his score for now)
+        if s not in new and cur.get(s) and cur[s] not in used and cur[s] in pool:
+            new[s] = cur[s]
+            used.add(cur[s])
+    home = {g[0]: s for s in free for g in st[s]}
+    for x, p, s0, bar in below:
+        on = next((s for s, q in new.items() if q == p), None)
+        calls.append(dict(p=p, kind='hold' if on is not None else 'drop', x=x, bar=bar, slot=on, from_slot=s0,
+                          close=False, plan_slot=home.get(p)))
     notes = {s: dict(worth=fresh_value(st[s]), plan=st[s]) for s in free}
-    for c in calls:  # a dropped holder can still end up starting (nobody else plays his slot today)
-        if c['kind'] == 'drop' and c['p'] in new.values():
-            c.update(kind='keep', slot=next(s for s, q in new.items() if q == c['p']))
     return new, notes, calls
