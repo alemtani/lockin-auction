@@ -187,19 +187,22 @@ class LockIn:
         return out
 
 
-def week_state(games, started, locked_on):
+def week_state(games, started, locked_on, alive=None):
     """This week's score so far for one player.
 
     games: his games this week, oldest first, each {'date', 'fp'}.
     started(date): True if he was in your lineup for that game. A bench game never counts and cannot be locked.
     locked_on(date, fp): True if that game was locked. Sleeper's public data does not show locks
     (its matchup points match neither the app nor the latest game), so the caller assumes the lock calls were followed.
+    alive(date): False if he was benched after that game, which drops his score (he starts from zero).
     """
     gs = [g for g in games if started(g['date'])]
     for g in gs:
         if locked_on(g['date'], g['fp']):
-            return dict(games=gs, current=g['fp'], locked=True, locked_date=g['date'])
-    return dict(games=gs, current=gs[-1]['fp'] if gs else None, locked=False, locked_date=None)
+            return dict(games=gs, current=g['fp'], locked=True, locked_date=g['date'], current_date=g['date'])
+    last = gs[-1] if gs and (alive is None or alive(gs[-1]['date'])) else None
+    return dict(games=gs, current=last['fp'] if last else None, locked=False, locked_date=None,
+                current_date=last['date'] if last else None)
 
 
 def game_avail(a, injury, projected, sits, first=True, a_season=None):

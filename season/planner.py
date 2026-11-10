@@ -122,11 +122,13 @@ def lock_options(p, s, days, holder, score, locked, players):
     return sorted(out)
 
 
-def morning(day, days, holder, score, locked, players):
+def morning(day, days, holder, score, locked, players, tie=0.0, safe=True):
     """The morning move: lock calls, then today's starter for every open slot.
 
     holder: slot -> pid. score: pid -> current score (started players only). locked: set of slots.
-    days: the week's game days from today on. Returns (new holder, notes per slot, locks).
+    days: the week's game days from today on. Returns (new holder, notes per slot, calls).
+    tie, safe: a close call is a lock within `tie` points of its bar. safe (the favorite) locks it,
+    otherwise (the underdog) rolls it. The same rule as the lineup and the old lock calls.
 
     1. Lock calls, only for holders who play today: lock now or today's game replaces the score.
        Lock in slot t when his score plus the plan for the other open slots (without him) beats the plan
@@ -135,18 +137,24 @@ def morning(day, days, holder, score, locked, players):
        beats the plan with him back in the pool. He sits in the slot where that works best.
     3. Every other open slot gets the plan's game for today, and an empty slot takes any game today
        (a free try: a bad score costs nothing, you can still replace it).
-    locks: [(pid, to slot, from slot, score, bar)]. Changes holder and locked in place.
+    calls: one dict per holder with an unlocked score: kind = lock, roll, keep (no game today, it waits)
+    or drop (benched: a fresh try is worth more), with score x, bar, slot and from_slot.
+    Changes holder and locked in place.
     """
-    locks = []
+    calls = []
     for x, p in sorted(((score[p], p) for s, p in holder.items() if s not in locked and p in score
                         and day in players[p]['games']), reverse=True):
         s = next((t for t, q in holder.items() if q == p and t not in locked), None)  # he may have moved
         if s is None:
             continue
         opts = [(x - bar, bar, t) for bar, t in lock_options(p, s, days, holder, score, locked, players)]
-        if not opts or max(opts)[0] < 0:
+        if not opts:
             continue
-        _, bar, t = max(opts)
+        gap, bar, t = max(opts)
+        close = abs(gap) < tie
+        if gap < (-tie if safe else tie):
+            calls.append(dict(p=p, kind='roll', x=x, bar=bar, slot=t, from_slot=s, close=close))
+            continue
         if t != s:
             q = holder.get(t)
             holder[t] = p
@@ -156,7 +164,7 @@ def morning(day, days, holder, score, locked, players):
                 del holder[s]
                 score.pop(q, None)
         locked.add(t)
-        locks.append((p, t, s, x, bar))
+        calls.append(dict(p=p, kind='lock', x=x, bar=bar, slot=t, from_slot=s, close=close))
 
     open_ = [s for s in range(len(SLOTS)) if s not in locked]
     pinned = {holder[s] for s in locked}
@@ -176,6 +184,9 @@ def morning(day, days, holder, score, locked, players):
             new[s] = p
             used.add(p)
             free.remove(s)
+            calls.append(dict(p=p, kind='keep', x=x, bar=base - (max(opts)[0] - x), slot=s, close=False))
+        else:
+            calls.append(dict(p=p, kind='drop', x=x, bar=base - (max(opts)[0] - x) if opts else None, slot=None, close=False))
     st = streams({q: v for q, v in pool.items() if q not in used}, days, free)
     for s in free:  # the plan's game for today
         if st[s] and st[s][0][1] == day and st[s][0][0] not in used:
@@ -192,4 +203,7 @@ def morning(day, days, holder, score, locked, players):
             new[s] = holder[s]
             used.add(holder[s])
     notes = {s: dict(worth=fresh_value(st[s]), plan=st[s]) for s in free}
-    return new, notes, locks
+    for c in calls:  # a dropped holder can still end up starting (nobody else plays his slot today)
+        if c['kind'] == 'drop' and c['p'] in new.values():
+            c.update(kind='keep', slot=next(s for s, q in new.items() if q == c['p']))
+    return new, notes, calls

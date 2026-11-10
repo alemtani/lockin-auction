@@ -180,3 +180,55 @@ class Lineups(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Planner(unittest.TestCase):
+    """The slot planner (planner.py): one move each morning."""
+
+    @staticmethod
+    def pool(**ps):
+        # name=(positions, {day: mu}) with a = 1.0 and sigma = 10
+        return {n: dict(name=n, pos=pos, games={d: (mu, 1.0, 10.0) for d, mu in g.items()}) for n, (pos, g) in ps.items()}
+
+    def setUp(self):
+        import planner
+        self.P = planner
+
+    def test_one_home_slot_per_player(self):
+        # One C who plays 3 times: only the C slot can use him, and he counts once, not in UTIL too.
+        pl = self.pool(c=(['C'], {1: 30, 2: 30, 3: 30}))
+        st = self.P.streams(pl, [1, 2, 3], [6, 7])
+        self.assertEqual(sum(len(v) for v in st.values()), 3)
+
+    def test_empty_slot_takes_a_free_try(self):
+        pl = self.pool(g=(['PG'], {1: 15}), star=(['PG'], {2: 40}))
+        new, _, calls = self.P.morning(1, [1, 2], {}, {}, set(), pl)
+        self.assertIn('g', new.values())  # he plays today; the star plays tomorrow
+        self.assertEqual(calls, [])
+
+    def test_big_score_locks_small_score_rolls(self):
+        pl = self.pool(a=(['C'], {2: 30, 3: 30}))
+        for x, kind in ((60.0, 'lock'), (10.0, 'roll')):
+            holder, score, locked = {6: 'a'}, {'a': x}, set()
+            _, _, calls = self.P.morning(2, [2, 3], holder, score, locked, pl)
+            self.assertEqual(calls[0]['kind'], kind)
+            self.assertEqual(bool(locked), kind == 'lock')  # any slot he fits; with no one else, all cost the same
+
+    def test_score_waits_when_he_has_no_game_today(self):
+        # He holds 33 and plays again on day 3. No call today: his score waits.
+        pl = self.pool(a=(['C'], {3: 30}), b=(['PG'], {2: 25}))
+        _, _, calls = self.P.morning(2, [2, 3], {6: 'a'}, {'a': 33.0}, set(), pl)
+        self.assertEqual([c['kind'] for c in calls], ['keep'])
+
+    def test_close_call_follows_the_matchup(self):
+        pl = self.pool(a=(['C'], {2: 30, 3: 30}))
+        bar = self.P.lock_options('a', 6, [2, 3], {6: 'a'}, {'a': 0}, set(), pl)[0][0]
+        for safe, kind in ((True, 'lock'), (False, 'roll')):
+            _, _, calls = self.P.morning(2, [2, 3], {6: 'a'}, {'a': bar - 0.5}, set(), pl, tie=1.5, safe=safe)
+            self.assertEqual(calls[0]['kind'], kind)
+            self.assertTrue(calls[0]['close'])
+
+    def test_benched_score_is_gone(self):
+        gs = [dict(date='mon', fp=30.0)]
+        st = model.week_state(gs, lambda d: True, lambda d, fp: False, alive=lambda d: False)
+        self.assertIsNone(st['current'])

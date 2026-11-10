@@ -1,4 +1,4 @@
-"""Email text: Monday (lineup, matchup, waivers) and daily (results, lock calls, swaps)."""
+"""Email text: Monday (lineup, matchup, waivers) and daily (last night, lock calls, lineup)."""
 import datetime, html as H, os, smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -12,7 +12,7 @@ STYLE = """<style>
 .lk td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .lk .m{color:#777;font-size:12px}
 </style>"""
-CALL_COLOR = {'LOCK': '#0a7d32', 'CLOSE CALL': '#b26a00', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
+CALL_COLOR = {'LOCK': '#0a7d32', 'ROLL': '#1d5fbf', 'WAIT': '#b26a00', 'DROP': '#999', 'CLOSE CALL': '#b26a00', 'COIN FLIP': '#b26a00', 'KEEP ROLLING': '#1d5fbf', 'LOCKED': '#555', 'FINAL': '#555', 'bench': '#999'}
 
 
 def d(day):
@@ -70,13 +70,30 @@ def why_pickup(m):
     return '; '.join(bits)
 
 
+def call_line(c, tie):
+    """One morning call in plain words."""
+    n, x = c['name'], c['x']
+    close = f" Close call ({abs(x - c['bar']):.1f} apart, within {tie:.1f})." if c.get('close') else ''
+    if c['kind'] == 'lock':
+        moved = f", moved from {c['from_slot']}" if c['from_slot'] != c['slot'] else ''
+        why = ' You are the favorite, so play it safe.' if c.get('close') else ''
+        return f"Lock {n} ({x:.1f}) at {c['slot']}{moved}. He needed {c['bar']:.1f}.{close}{why}"
+    if c['kind'] == 'roll':
+        why = ' You are the underdog, so take the chance.' if c.get('close') else ''
+        return f"Don't lock {n} ({x:.1f}). He plays today, and that game replaces it. Locking needed {c['bar']:.1f}.{close}{why}"
+    if c['kind'] == 'keep':
+        when = f"on {c['next_game']}, his next game" if c['next_game'] else 'never: he has no games left, so it counts'
+        return f"{n} holds {x:.1f} at {c['slot']}. No game today, so no call yet. It is decided {when}."
+    return f"Bench {n}: his {x:.1f} is worth less than a fresh try in his slot. Benching drops it."
+
+
 def render(R):
     D = Doc()
     wk = R['week_dates']
     if R['mode'] == 'monday':
         subject = f"Lock-In week {R['week']}: lineup + pickups ({d(wk[0])}–{d(wk[-1])})"
     else:
-        subject = f"Lock-In {d(R['day'])}: results + lock calls"
+        subject = f"Lock-In {d(R['day'])}: lock calls + lineup"
 
     m = R.get('matchup')
     if m:
@@ -89,36 +106,24 @@ def render(R):
         if not res:
             D.para('None of your players played.')
         else:
-            rows, colors, reasons = [], {}, []
-            for i, x in enumerate(res):
-                rows.append([x['name'], f"{x['fp']:.1f}", f"{x['mu']:.0f}", f"{x['min']:.0f}", x['left'], x['call']])
-                colors[i] = CALL_COLOR.get(x['call'].split(':')[0])
-                if x['call'].split(':')[0] in ('LOCK', 'CLOSE CALL', 'KEEP ROLLING'):
-                    ahead = (f"His last game this week is worth about {x['thr']:.1f}" if x['left'] == 1 else
-                             f"With {x['left']} games left, his typical best is {x['thr']:.1f}")
-                    gap = abs(x['fp'] - x['thr'])
-                    end = {'LOCK': f"{x['fp']:.1f} beats it by {gap:.1f}. Lock it.",
-                           'CLOSE CALL: LOCK': f"They are {gap:.1f} apart. That is a close call. You are the favorite, so play it safe. Lock it.",
-                           'CLOSE CALL: ROLL': f"They are {gap:.1f} apart. That is a close call. You are the underdog, so take the chance. Keep rolling.",
-                           'KEEP ROLLING': f"That is {gap:.1f} more. Keep rolling."}[x['call']]
-                    reasons.append(f"{x['name']}: scored {x['fp']:.1f}. {ahead}. {end}")
-            reasons.append(f"Close call = within {R['tie']:.1f} points. The lineup uses the same rule.") if any(x['call'].startswith('CLOSE CALL') for x in res) else None
-            D.table(['Player', 'Score', 'Avg exp', 'Minutes', 'Games left', 'Call'], rows, colors)
-            if reasons:
-                D.head('Why')
-                D.bullets(reasons)
-            D.para("'Typical best' = what you can expect if you pass on this game and lock well later. "
-                   "It is not the best of the games left, because you can't go back to a game you passed. "
-                   "Lock when tonight beats it. 'Avg exp' = his usual game; the call also uses the matchup and injury news for the games left. "
-                   "Sleeper doesn't share your locks, so this email assumes you followed every call.", muted=True)
-        D.head('Bench swaps')
-        if R.get('swaps'):
-            D.bullets([f"{s['slot']}: start {s['into']} for {s['out']}. +{s['gain']:.1f} points. {s['into']} has {s['in_games']} games left (worth about {s['in_v']:.1f}); "
-                       f"{s['out']} is worth about {s['out_v']:.1f} from here." for s in R['swaps']])
-        else:
-            D.para('No swap worth 3+ points.')
+            rows = [[x['name'], f"{x['fp']:.1f}", f"{x['mu']:.0f}", f"{x['min']:.0f}", x['call']] for x in res]
+            colors = {i: CALL_COLOR.get(x['call'].split()[0]) for i, x in enumerate(res)}
+            D.table(['Player', 'Score', 'Avg exp', 'Minutes', 'Call'], rows, colors)
 
-    D.head('Every player this week' if R['mode'] == 'monday' else 'Every player from today')
+    D.head('Lock calls this morning')
+    order = {'lock': 0, 'roll': 1, 'drop': 2, 'keep': 3}
+    cs = sorted(R.get('calls') or [], key=lambda c: (order[c['kind']], -c['x']))
+    if cs:
+        D.bullets([call_line(c, R['tie']) for c in cs])
+    else:
+        D.para('None. No player has an open score.')
+    D.para("A score can wait until the player's next game. The call comes the morning he plays again: lock it, "
+           "or today's game replaces it. 'Needed' = what your other slots give up without him, so the bar depends on "
+           "your whole roster, not just his own games. Lock in the slot that costs the rest of the roster least, "
+           "usually the most restrictive one. Sleeper doesn't share your locks, so this email assumes you followed "
+           "every call. If you didn't, add a line to data/season/locks.txt.", muted=True)
+
+    D.head("Today's lineup")
 
     def note(x):
         av = x.get('avail') or []
@@ -126,32 +131,33 @@ def render(R):
         if av and min(av) < 0.75:
             bits.append('plays ' + '/'.join(f"{a * 100:.0f}" for a in av) + '%')
         return ', '.join(bits)
-    rows = [[x['slot'], x['name'] + ('*' if x['flip'] else ''), x['games'], f"{x['value']:.1f}", f"{x['mu']:.1f}", note(x)] for x in R['lineup']]
-    rows += [['IR' if b['ir'] else 'BN', b['name'] + ('*' if b['flip'] else ''), b['games'], f"{b['value']:.1f}", f"{b['mu']:.1f}", note(b)]
-             for b in R['bench']]
-    D.table(['Slot', 'Player', 'Games', 'Week score', 'Per game', 'Note'], rows)
-    if R.get('close'):
-        if R.get('fav') is None:
-            rule = 'No matchup found, so the higher score starts.'
-        elif R['fav']:
-            rule = 'You are the favorite, so close calls go to the steadier lineup.'
-        else:
-            rule = 'You are the underdog, so close calls go to the boom-or-bust lineup.'
-        D.para(f"* Close calls (within {R['tie']:.1f} points; the same rule as a close lock call). {rule}", muted=True)
-        D.bullets([f"{c['a']} {c['a_v']:.1f} (swing ±{c['a_sd']:.0f}) vs {c['b']} {c['b_v']:.1f} (±{c['b_sd']:.0f}), "
-                   f"{c['margin']:.1f} apart. Start {c['start']}." for c in R['close']])
+    rows = [[x['slot'], x['name'], x['today'], x['bar'], x['if_below'], note(x)] for x in R['plan']]
+    rows += [[b['slot'], b['name'], b['today'], '', '', note(b)] for b in R['bench']]
+    D.table(['Slot', 'Player', 'Today', 'Lock if >=', 'If below', 'Note'], rows)
+    if R.get('lock_mismatch'):
+        names = ', '.join(R['lock_mismatch'])
+        who = 'that player' if len(R['lock_mismatch']) == 1 else 'those players'
+        msg = (f"the email has a lock on record for {names}, but Sleeper does not list {who} as starting. "
+               "A locked player can't move, so the record is wrong. Fix it in data/season/locks.txt.")
+        D.para('Check: ' + msg, '<b>Check:</b> ' + H.escape(msg))
     if R.get('empty'):
         D.para(f"Warning: your Sleeper lineup has an empty slot ({', '.join(R['empty'])}). An empty slot scores 0.",
                f"<b>Warning: your Sleeper lineup has an empty slot ({H.escape(', '.join(R['empty']))}).</b> An empty slot scores 0.")
-    if R['changes_in']:
-        txt = f"start {', '.join(R['changes_in'])}" + (f"; bench {', '.join(R['changes'])}" if R['changes'] else '')
-        D.para(f"Change in Sleeper: {txt}.", f"<b>Change in Sleeper:</b> {H.escape(txt)}.")
+    if R['moves']:
+        D.para('Change in Sleeper: ' + '; '.join(R['moves']) + '.',
+               '<b>Change in Sleeper:</b> ' + H.escape('; '.join(R['moves'])) + '.')
     else:
         D.para('Your Sleeper lineup already matches.')
-    D.para("'Week score' = expected locked score for the week. It counts the games left and the chance he plays, "
-           "so a 4-game player can beat a better 3-game player. 'plays' = his chance to play each game left. "
-           "Status can change during the week: an Out player can be back later, and Sleeper's return date is in these numbers. "
-           "The daily email re-checks every player.", muted=True)
+    D.para("'Free try' = the slot holds no score, so any score helps and you can still replace it. "
+           "'Lock if >=' = the score he needs, judged the morning of his next game. 'If below' = what the slot does then. "
+           "'plays' = his chance to play each game left. Status can change during the week: an Out player can be back "
+           "later, and Sleeper's return date is in these numbers. The email re-checks every player each morning.", muted=True)
+
+    if R.get('week_plan'):
+        D.head('Week plan (re-planned every morning)')
+        D.bullets([f"{w['slot']} (worth {w['worth']:.0f}): " + (', '.join(w['tries']) or 'no games left') for w in R['week_plan']])
+        D.para("Who tries each open slot, by day. Each player has one home slot, so his games count once. "
+               "'Worth' = what the slot can expect from these tries.", muted=True)
     if m:
         D.para(f"Their best: " + ', '.join(f"{n} {v:.0f}" for n, v in m['their_top']) + '.', muted=True)
 
