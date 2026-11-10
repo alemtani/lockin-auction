@@ -1,0 +1,89 @@
+Lock-In Tue 11/10: lock calls + lineup
+
+Week 4 vs Giant Slayers: you 416, them 362 (expected). Win chance 83%.
+
+LAST NIGHT (MON 11/9)
+Player             Score  Avg exp  Minutes  Call
+Anthony Davis      73.8   39       34       WAIT
+Jamal Murray       59.0   39       39       WAIT
+Kyrie Irving       51.8   34       38       WAIT
+Kevin Durant       32.5   33       36       DROP
+De'Anthony Melton  24.5   16       26       WAIT
+Jarrett Allen      24.0   26       19       DROP
+Coby White         8.5    16       20       DROP
+
+LOCK CALLS THIS MORNING
+- Bench Kevin Durant: his 32.5 is worth less than a fresh try in his slot. Benching drops it.
+- Bench Jarrett Allen: his 24.0 is worth less than a fresh try in his slot. Benching drops it.
+- Bench Coby White: his 8.5 is worth less than a fresh try in his slot. Benching drops it.
+- Anthony Davis holds 73.8 at C. No game today, so no call yet. It is decided on Wed, his next game.
+- Jamal Murray holds 59.0 at UTIL. No game today, so no call yet. It is decided on Wed, his next game.
+- Kyrie Irving holds 51.8 at SG. No game today, so no call yet. It is decided on Thu, his next game.
+- De'Anthony Melton holds 24.5 at G. No game today, so no call yet. It is decided on Wed, his next game.
+A score can wait until the player's next game. The call comes the morning he plays again: lock it, or today's game replaces it. 'Needed' = what your other slots give up without him, so the bar depends on your whole roster, not just his own games. Lock in the slot that costs the rest of the roster least, usually the most restrictive one. Sleeper doesn't share your locks, so this email assumes you followed every call. If you didn't, add a line to data/season/locks.txt.
+
+TODAY'S LINEUP
+Slot  Player              Today                      Lock if >=    If below                                 Note                   
+PG    Damian Lillard      plays today (free try)     36 (at G)     roll into his next game (Wed)                                   
+SG    Kyrie Irving        holds 51.8, no game today                                                                                
+G     De'Anthony Melton   holds 24.5, no game today                                                                                
+SF    (empty)             no game today                                                                                            
+PF    Domantas Sabonis    plays today (free try)     38 (at UTIL)  roll into his next game (Fri)            GTD, plays 65/87/87%   
+F     Lauri Markkanen     plays today (free try)     34 (at UTIL)  bench him, try Michael Porter Jr. (Wed)  GTD, plays 65/79/79/79%
+C     Anthony Davis       holds 73.8, no game today                                                                                
+UTIL  Darius Garland      plays today (free try)     34 (at PG)    bench him, try Jarrett Allen (Wed)                              
+UTIL  Jamal Murray        holds 59.0, no game today                                                                                
+BN    Kevin Durant        drops his 32.5                                                                                           
+BN    Jarrett Allen       drops his 24.0                                                                                           
+BN    Michael Porter Jr.  2 games left                                                                                             
+BN    Coby White          drops his 8.5                                                                                            
+BN    LaMelo Ball         2 games left                                                                                             
+BN    Austin Reaves       2 games left                                                                      DTD, plays 65/86%      
+Change in Sleeper: PG: Damian Lillard (now Jamal Murray); SF: empty (now Lauri Markkanen); PF: Domantas Sabonis (now Anthony Davis); F: Lauri Markkanen (now Kevin Durant); C: Anthony Davis (now Jarrett Allen); UTIL: Darius Garland (now Austin Reaves); UTIL: Jamal Murray (now Coby White).
+'Free try' = the slot holds no score, so any score helps and you can still replace it. 'Lock if >=' = the score he needs, judged the morning of his next game. 'If below' = what the slot does then. 'plays' = his chance to play each game left. Status can change during the week: an Out player can be back later, and Sleeper's return date is in these numbers. The email re-checks every player each morning.
+
+WEEK PLAN (RE-PLANNED EVERY MORNING)
+- PG (worth 41): Wed Melton, Thu Irving, Fri Melton, Sat Irving, Sun Irving
+- SG (worth 40): Tue Lillard, Wed Lillard, Thu White, Fri Lillard, Sun White
+- G (worth 45): Wed Murray, Sat Murray
+- SF (worth 42): Wed Durant, Fri Durant, Sun Durant
+- PF (worth 47): Wed Davis, Thu Davis, Sun Davis
+- F (worth 39): Tue Markkanen, Wed Jr., Fri Markkanen, Sat Jr., Sun Markkanen
+- C (worth 41): Tue Sabonis, Fri Sabonis, Sun Sabonis
+- UTIL (worth 40): Tue Garland, Wed Allen, Fri Garland, Sat Allen, Sun Garland
+- UTIL (worth 44): Wed Reaves, Thu Ball, Sat Ball, Sun Reaves
+Who tries each open slot, by day. Each player has one home slot, so his games count once. 'Worth' = what the slot can expect from these tries.
+Their best: Giannis Antetokounmpo 55, Grayson Allen 47, Tyrese Maxey 43.
+
+WAIVER PICKUPS
+No move. No rising free agent beats your roster by enough. The closest:
+1. Add Jaylen Wells (SF/SG MEM), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+averaging 16 in 10 games vs projected 16 (+0), last 3: 8 → we now expect 16 (trust in real games 58%); 3 games left this week, 4 next
+2. Add Jaxson Hayes (C/PF UTA), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+averaging 18 in 9 games vs projected 11 (+7), last 3: 17 → we now expect 16 (trust in real games 73%); minutes up: 14 → 26. Check if a teammate is out; the boost may end when he returns; 4 games left this week, 4 next
+3. Add Jalen Smith (C/PF CHI), drop De'Anthony Melton: +0.0 per week (no gain: he would not crack your top 12).
+averaging 20 in 9 games vs projected 15 (+5), last 3: 20 → we now expect 18 (trust in real games 70%); 3 games left this week, 4 next
+Only rising players are listed: beating their projection, or minutes up. Gain = how much better your lineup gets this week (plus half of next week). A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+OUTLOOK CHANGES THIS WEEK
+- Anthony Davis: 35.3 → 38.6 per game
+- Jarrett Allen: 29.4 → 25.8 per game
+- Coby White: 22.5 → 16.4 per game
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Last 3  Games  Now   Trust real  50/50 at
+Anthony Davis       38.2       38.2      54.4    9      38.6  56%         7       
+Jamal Murray        36.5       40.6      36.6    9      38.5  43%         11      
+Austin Reaves       37.4       34.2      41.0    11     36.3  48%         11      
+Domantas Sabonis    37.0       33.6      25.0    9      34.9  56%         7       
+Kyrie Irving        35.0       32.3      30.9    9      34.0  68%         4       
+Kevin Durant        35.8       30.3      29.8    11     32.8  48%         11      
+Michael Porter Jr.  31.2       26.8      25.6    10     29.3  45%         11      
+Lauri Markkanen     34.0       23.8      31.2    8      29.3  40%         11      
+Darius Garland      31.7       24.9      30.5    9      29.0  43%         11      
+Damian Lillard      32.3       27.2      27.7    9      28.7  68%         4       
+LaMelo Ball         32.6       23.4      28.8    11     28.1  48%         11      
+Jarrett Allen       29.0       25.7      15.9    9      25.8  48%         9       
+De'Anthony Melton   17.4       16.2      11.9    11     16.5  48%         11      
+Coby White          28.5       1.0       1.9     4      16.4  26%         11      
+'Real avg' counts every game, locked or not, so a run of duds pulls 'Now' down. 'Last 3' shows the recent trend. 'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.
