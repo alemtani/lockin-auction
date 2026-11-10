@@ -107,16 +107,24 @@ def lock_options(p, s, days, holder, score, locked, players):
     days: game days from today on. If he rolls, his games from today on are tries again.
     Bar = what the other open slots lose without him and without slot t. The slot that costs the rest of
     the roster least has the lowest bar, which is usually the most restrictive slot he fits. A move needs
-    the other slot's holder to have no score, or to fit back in slot s.
+    the other slot's holder to have no score, to fit back in slot s, or to hold a score below his own bar
+    (he would be benched anyway, so the move benches him).
     """
     open_ = [t for t in range(len(SLOTS)) if t not in locked]
     pinned = {holder[t] for t in locked}
     pool = {q: v for q, v in players.items() if q not in pinned}
     base = total(pool, days, open_)
+
+    def below_bar(q):
+        """q's score loses to a fresh try: the rest of the roster without him and his slot beats it."""
+        rest = [total(pool, days, [u for u in open_ if u != w], exclude={q}) for w in open_
+                if lineup.fits(players[q]['pos'], SLOTS[w])]
+        return not rest or score[q] + max(rest) < base
     out = []
     for t in open_:
         q = holder.get(t)
-        movable = t == s or q is None or q == p or q not in score or lineup.fits(players[q]['pos'], SLOTS[s])
+        movable = (t == s or q is None or q == p or q not in score or lineup.fits(players[q]['pos'], SLOTS[s])
+                   or below_bar(q))
         if lineup.fits(players[p]['pos'], SLOTS[t]) and movable:
             out.append((base - total(pool, days, [u for u in open_ if u != t], exclude={p}), t))
     return sorted(out)
@@ -127,16 +135,20 @@ SLOT_TIE = 1.0   # points: lock in the most restrictive slot unless another slot
 MOVE_TIE = 1.0   # points: a waiting player moves to another slot only if that is worth more than this
 
 
-def rank(s):
-    """How restrictive a slot is: C, PG, SG, SF, PF (1 position) before G, F (2) before UTIL."""
+def rank(s, backups=None):
+    """How restrictive a slot is. First: how many of your players who still play this week fit it
+    (fewer = more restrictive, so the slot with the thinnest backup gets the lock). Then the slot itself:
+    C, PG, SG, SF, PF (1 position) before G, F (2) before UTIL."""
     ok = lineup.SLOT_OK[SLOTS[s]]
-    return len(ok) if ok else 99
+    n = sum(lineup.fits(pos, SLOTS[s]) for pos in backups) if backups is not None else 0
+    return n, len(ok) if ok else 99
 
 
-def pick(opts):
-    """opts: [(gap, bar, slot)]. The most restrictive slot within SLOT_TIE of the best gap."""
+def pick(opts, backups=None):
+    """opts: [(gap, bar, slot)]. The most restrictive slot within SLOT_TIE of the best gap.
+    backups: positions of your unpinned players who still have a game this week."""
     g = max(o[0] for o in opts)
-    return min((o for o in opts if o[0] >= g - SLOT_TIE), key=lambda o: (rank(o[2]), -o[0]))
+    return min((o for o in opts if o[0] >= g - SLOT_TIE), key=lambda o: (rank(o[2], backups), -o[0]))
 
 
 def seat(rows, slots, cur, held):
@@ -197,7 +209,9 @@ def morning(day, days, holder, score, locked, players, tie=0.0, safe=True, lock_
         opts = [(x - bar, bar, t) for bar, t in lock_options(p, s, days, holder, score, locked, players)]
         if not opts:
             continue
-        gap, bar, t = pick(opts)
+        pinned = {holder[u] for u in locked}
+        backups = [v['pos'] for q, v in players.items() if q not in pinned and any(d in v['games'] for d in days)]
+        gap, bar, t = pick(opts, backups)
         close = abs(gap) < tie
         if plays and gap < (-tie if safe else tie):
             calls.append(dict(p=p, kind='roll', x=x, bar=bar, slot=t, from_slot=s, close=close))
@@ -211,6 +225,9 @@ def morning(day, days, holder, score, locked, players, tie=0.0, safe=True, lock_
                 holder[s] = q
             else:
                 del holder[s]
+                if q in score:
+                    calls.append(dict(p=q, kind='drop', x=score[q], bar=None, slot=None, from_slot=t, close=False,
+                                      plan_slot=None, by=p))
                 score.pop(q, None)
         locked.add(t)
         calls.append(dict(p=p, kind='lock', x=x, bar=bar, slot=t, from_slot=s, close=close and plays, now=not plays))

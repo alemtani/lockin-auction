@@ -355,7 +355,7 @@ def main():
         nxt_game = next((d for d in dates if d > day and d in pv[c['p']]['games']), None)
         ps = c.get('plan_slot')
         plan = notes[ps] if ps is not None and ps in notes else None
-        R['calls'].append(dict(c, name=nm(c['p']), slot=lineup.SLOTS[c['slot']] if c['slot'] is not None else None,
+        R['calls'].append(dict(c, name=nm(c['p']), by=nm(c['by']) if c.get('by') else None, slot=lineup.SLOTS[c['slot']] if c['slot'] is not None else None,
                                from_slot=lineup.SLOTS[c['from_slot']] if c.get('from_slot') is not None else None,
                                next_game=dn(nxt_game) if nxt_game else None,
                                plan_slot=lineup.SLOTS[ps] if plan else None, plan_worth=plan['worth'] if plan else None,

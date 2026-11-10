@@ -271,6 +271,17 @@ class Planner(unittest.TestCase):
         new, _, _ = self.P.morning(2, [2, 3], holder, score, locked, pl, lock_now=99)
         self.assertEqual((new.get(2), new.get(7)), ('a', 'g'))
 
+    def test_lock_goes_where_backup_is_thinnest(self):
+        # a (C/PF) holds 80 at PF. c (C) holds 5 at C, below his bar, and can't play PF. Three others fit PF.
+        # Bars tie, so a locks at C (2 players fit it, 4 fit PF) and c is benched.
+        pl = self.pool(a=(['C', 'PF'], {3: 30}), c=(['C'], {3: 20}),
+                       f1=(['PF'], {2: 20, 3: 20}), f2=(['PF'], {2: 20}), f3=(['PF', 'SF'], {3: 20}))
+        holder, score, locked = {4: 'a', 6: 'c'}, {'a': 80.0, 'c': 5.0}, set()
+        new, _, calls = self.P.morning(2, [2, 3], holder, score, locked, pl)
+        lock = next(c for c in calls if c['p'] == 'a')
+        self.assertEqual((lock['kind'], lock['slot']), ('lock', 6))
+        self.assertNotIn('c', new.values())
+
     def test_benched_score_is_gone(self):
         gs = [dict(date='mon', fp=30.0)]
         st = model.week_state(gs, lambda d: True, lambda d, fp: False, alive=lambda d: False)

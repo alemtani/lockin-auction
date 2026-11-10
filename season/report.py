@@ -97,6 +97,8 @@ def call_line(c, tie):
     if c['kind'] == 'hold':
         return (f"{n} holds {x:.1f} at {c['slot']} for today only. He needs {bar:.0f}, but nobody else plays {c['slot']} today, "
                 f"so keeping him costs nothing. Expect to bench him {('on ' + nxt) if nxt else 'later'}.{plan}")
+    if c.get('by'):
+        return f"Bench {n}: his {x:.1f} is below his bar, and {c['by']} locks in his slot ({c['from_slot']}). Benching drops it."
     need = f", and he needs {bar:.0f}" if bar is not None else ''
     return f"Bench {n}: his {x:.1f} is below the bar{need}. A player who plays today needs his slot. Benching drops it.{plan}"
 
