@@ -258,6 +258,22 @@ class Planner(unittest.TestCase):
         new, _, calls = self.P.morning(2, [2, 3], {6: 'a', 7: 'u', 8: 'v'}, {'a': 5.0, 'u': 40.0, 'v': 40.0}, {7, 8}, pl)
         self.assertEqual((calls[0]['kind'], new.get(6)), ('drop', 'c'))
 
+    def test_long_shot_today_beats_a_dead_score(self):
+        # a (C/PF) holds 3 at PF, far below his bar, and plays day 3. m (PF/SF) is tagged Out today (10%), and his
+        # home slot is F (d plays F today). Nobody's plan uses PF today, but a's 3 almost surely gets replaced on
+        # day 3, so m's long-shot try at PF is worth more than holding it.
+        pl = self.pool(a=(['C', 'PF'], {3: 32}), m=(['PF', 'SF'], {2: 29, 3: 29}), d=(['SF'], {2: 25}))
+        pl['m']['games'][2] = (29, 0.1, 13)
+        holder, score, locked = {4: 'a', 5: 'd'}, {'a': 3.0}, set()
+        for t in (0, 1, 2, 3, 6, 7, 8):
+            pl[f'x{t}'] = dict(name='x', pos=['PG', 'SG', 'SF', 'PF', 'C'], games={})
+            holder[t] = f'x{t}'
+            score[f'x{t}'] = 40.0
+            locked.add(t)
+        new, _, calls = self.P.morning(2, [2, 3], holder, score, locked, pl, lock_now=99)
+        self.assertEqual((new.get(4), new.get(5)), ('m', 'd'))
+        self.assertEqual(next(c['kind'] for c in calls if c['p'] == 'a'), 'drop')
+
     def test_today_player_displaces_the_lowest_score(self):
         # g (PG) plays today. G and UTIL hold 30 and 8, UTIL 2 is locked: g takes the UTIL with 8.
         pl = self.pool(a=(['SG'], {3: 30}), b=(['SG'], {3: 30}), u=(['C'], {}), g=(['PG'], {2: 25}))

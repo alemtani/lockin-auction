@@ -194,7 +194,9 @@ def morning(day, days, holder, score, locked, players, tie=0.0, safe=True, lock_
     3. Today's games: the plan's game for each other open slot, then free tries for empty slots.
        They take open slots with as few moves as possible.
     4. A waiting holder below his bar keeps his score only while his slot is not needed today ('hold').
-       If a player who plays today needs it, he is benched and the score is gone ('drop').
+       If a player who plays today needs it, he is benched and the score is gone ('drop'). That includes a
+       player left over after step 3 whose try beats the score his own next game will likely replace,
+       even a long shot tagged Out.
        A starter with nothing to do today stays where he is.
     calls: one dict per holder with an unlocked score: kind = lock (now=True if he has no game today), roll,
     keep, hold or drop, with score x, bar, slot, from_slot, and for hold/drop the slot that plans his games.
@@ -269,12 +271,34 @@ def morning(day, days, holder, score, locked, players, tie=0.0, safe=True, lock_
     for s, p in assign(rows, [s for s in left if cur.get(s) not in held]).items():  # free tries
         today.append((p, s))
         used.add(p)
-    new.update(seat([(p, pool[p]['pos']) for p, _ in today], free, cur, held))
+    home = {g[0]: s for s in free for g in st[s]}
+    rows = [(p, pool[p]['pos']) for p, _ in today]
+    seats = seat(rows, free, cur, held)
+    # A below-bar holder who keeps his seat holds a score his own next game will most likely replace.
+    # A player who plays today but has no seat takes it when his try is worth more than that score,
+    # so even a long shot (tagged Out) beats a dead score.
+    for x, p, s0, _ in sorted(below):
+        if s0 in seats or cur.get(s0) != p:
+            continue  # someone who plays today already takes his slot
+        rest = [g for g in st[home[p]] if g[1] != day] if p in home else []
+        keep = _lockin(rest).week_value(current=x) if rest else x
+        tries = sorted(((fresh_value([(q, day) + tuple(v['games'][day])] + rest) - keep, q) for q, v in pool.items()
+                        if q not in used and day in v['games']), reverse=True)
+        for gain, q in tries:
+            if gain <= 0:
+                break
+            alt = seat(rows + [(q, pool[q]['pos'])], free, cur, held)
+            lost = {cur[t] for t in alt if t not in seats and cur.get(t) in held}
+            if len(alt) == len(rows) + 1 and lost <= {p}:  # q starts, and only p's score is given up
+                rows.append((q, pool[q]['pos']))
+                used.add(q)
+                seats = alt
+                break
+    new.update(seats)
     for s in free:  # nobody plays here today: the starter stays (a holder below his bar keeps his score for now)
         if s not in new and cur.get(s) and cur[s] not in used and cur[s] in pool:
             new[s] = cur[s]
             used.add(cur[s])
-    home = {g[0]: s for s in free for g in st[s]}
     for x, p, s0, bar in below:
         on = next((s for s, q in new.items() if q == p), None)
         calls.append(dict(p=p, kind='hold' if on is not None else 'drop', x=x, bar=bar, slot=on, from_slot=s0,
