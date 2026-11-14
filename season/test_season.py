@@ -331,3 +331,40 @@ class Report(unittest.TestCase):
         self.assertTrue(report.call_html(c, line).startswith('<b style="color:#b00020">BENCH</b> Kevin Durant'))
         c = dict(kind='lock', name='LaMelo Ball', x=39.2, bar=35.1, slot='UTIL', from_slot='UTIL')
         self.assertTrue(report.call_line(c, 1.5).startswith('LOCK LaMelo Ball'))
+
+
+class WinProb(unittest.TestCase):
+    """The win-chance check: the planner's lock math with the final score worth u(x) instead of x."""
+
+    def test_points_version_matches_lockin(self):
+        import winprob
+        g = [(30.0, 0.9, 12.0), (25.0, 0.95, 10.0), (33.0, 0.8, 14.0)]
+        L = model.LockIn(0, 0, 0, 3, mus=[x[0] for x in g], avail=[x[1] for x in g], sigmas=[x[2] for x in g])
+        S = winprob.Slot(g, winprob.ev)
+        self.assertAlmostEqual(S.value(), L.week_value(), places=6)
+        self.assertAlmostEqual(S.value(current=31.0), L.week_value(current=31.0), places=6)
+
+    def test_big_lead_late_keeps_the_sure_score(self):
+        # Today's Durant case: hold 32.5 (one game left, avg 33) vs bench for Collins (avg 20) then Durant.
+        # Expected points prefer benching, but with a lead and little swing left, win chance holds.
+        import winprob
+        m, s = -3.0, 15.0
+        opts = [winprob.option('bench', [(20.2, 0.95, 14.8), (32.9, 0.95, 10.5)], None, False, m, s),
+                winprob.option('hold', [(32.9, 0.95, 10.5)], 32.5, False, m, s)]
+        r = winprob.compare(opts, 'bench')
+        self.assertEqual((r['ev_pick'], r['wp_pick']), ('bench', 'hold'))
+        self.assertTrue(r['disagree'])
+
+    def test_big_swing_early_agrees_with_points(self):
+        import winprob
+        m, s = -3.0, 80.0
+        opts = [winprob.option('bench', [(20.2, 0.95, 14.8), (32.9, 0.95, 10.5)], None, False, m, s),
+                winprob.option('hold', [(32.9, 0.95, 10.5)], 32.5, False, m, s)]
+        self.assertFalse(winprob.compare(opts, 'bench')['disagree'])
+
+    def test_too_costly_is_not_reported(self):
+        import winprob
+        opts = [dict(name='a', ev=40.0, wp=0.90, ev_wp=40.0), dict(name='b', ev=35.0, wp=0.95, ev_wp=35.0)]
+        r = winprob.compare(opts, 'a')
+        self.assertEqual(r['wp_pick'], 'b')
+        self.assertFalse(r['disagree'])  # 5 points is more than COST_MAX

@@ -113,6 +113,30 @@ def call_line(c, tie):
     return f"BENCH {n}: his {x:.1f} is below the bar{need}. A player who plays today needs his slot. Benching drops it.{plan}"
 
 
+OPT_WORD = {'lock': 'LOCK', 'roll': "DON'T LOCK", 'bench': 'BENCH', 'hold': 'HOLD'}
+
+
+def winprob_lines(checks):
+    """The shadow win-chance check: (disagreements, one audit line per call checked)."""
+    out = []
+    for c in checks:
+        if not c['disagree']:
+            continue
+        o = {x['name']: x for x in c['opts']}
+        w, e = o[c['wp_pick']], o[c['ev_pick']]
+        what = f"{c['name']}'s {c['x']:.1f}"
+        later = f" and decide {c['next_game']}" if c['wp_pick'] == 'hold' and c.get('next_game') else ''
+        out.append((OPT_WORD[c['wp_pick']],
+                    f" {what}{later} instead of {OPT_WORD[c['ev_pick']]}: {w['wp']:.1%} vs {e['wp']:.1%} to win the week, "
+                    f"for {max(c['cost'], 0):.1f} fewer expected points ({e['ev']:.1f} vs {w['ev_wp']:.1f})."))
+    audit = []
+    for c in checks:
+        o = ', '.join(f"{n} {x['wp']:.1%}" for n, x in ((x['name'], x) for x in c['opts']))
+        tag = '' if c['match'] else ' (simple view differs from the planner: not judged)'
+        audit.append(f"{c['name']}: {o}. Rest of the week: {c['m']:+.0f}, swing ±{c['s']:.0f}.{tag}")
+    return out, audit
+
+
 def render(R):
     D = Doc()
     wk = R['week_dates']
@@ -151,6 +175,22 @@ def render(R):
            "slot, and a score below its bar is benched only when someone who plays today needs the slot. "
            "Sleeper doesn't share your locks, so this email assumes you followed every call. If you didn't, "
            "add a line to data/season/locks.txt.", muted=True)
+
+    if R.get('winprob'):
+        D.head('Win chance check (shadow: not acted on)')
+        dis, audit = winprob_lines(R['winprob'])
+        if dis:
+            D.bullets([f"Win chance would {v}{t}" for v, t in dis],
+                      [f"Win chance would <b>{H.escape(v)}</b>{H.escape(t)}" for v, t in dis])
+        else:
+            D.para('Win chance agrees with every call today.')
+        D.para(' '.join(audit), muted=True)
+        D.para("The calls above pick the most expected points. This check scores the same choices by your chance "
+               "to win the week, from where the rest of your lineup and theirs stand (a lead, plus the swing still "
+               "to come, padded for what the model can't see and for their locks, which Sleeper doesn't share). "
+               "It speaks up only when win chance rises by 1 point or more for at most 2 expected points. "
+               "Early in the week the swing is large and it nearly always agrees. Follow the calls above; "
+               "this is a trial.", muted=True)
 
     D.head("Today's lineup")
 

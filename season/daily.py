@@ -9,14 +9,15 @@ Daily mode (other days): yesterday's games, then the same.
 Every morning the slot planner (planner.py) makes the lock calls and picks today's lineup.
 Waiver pickups: every day. Mid-week a move needs twice the Monday gain.
 """
-import argparse, csv, datetime, os, sys, zoneinfo
+import argparse, csv, datetime, math, os, sys, zoneinfo
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(__file__))
-import fetch, lineup, model, planner, report
+import fetch, lineup, model, planner, report, winprob
 
 OUT = 'data/season'
 LOCKS = f'{OUT}/locks.txt'
+WDIR = f'{OUT}/winprob'      # the win-chance check, one file per morning
 LDIR = f'{OUT}/planner_locks'  # the planner's lock calls, one file per morning: pid|slot|score|game date
 PLAN_START = '2026-11-09'      # the first morning the planner made the calls; earlier games use calls/<game date>.txt
 TO = 'alex.m.tanimoto@gmail.com'
@@ -28,6 +29,7 @@ NEXT_WEEK = 0.5     # weight of next week's value in waiver math
 TIE = 1.5           # points: a close call, for lineups and locks alike. Favorite plays it safe, underdog takes the risk.
 RISE_MIN = 1.25     # recent minutes this far above his projected minutes = a bigger role
 MIX = 0.5           # weight of Sleeper's game-by-game projection in this week's expected points
+WIN_PROB = os.environ.get('WIN_PROB') or winprob.MODE_SHADOW  # 'shadow': report where win chance disagrees; 'off': skip
 
 
 def today_pt():
@@ -104,6 +106,51 @@ def build_priors(players, scoring):
     for pid, r in seed.items():
         pri[pid] = model.prior_from_seed(r, proj.get(pid, {}).get('sp', 0) / 60 or None)
     return pri
+
+
+def check_win_chance(day, dates, week_days, calls, new, locked, score, held, pv, notes, matchup, nm):
+    """Score this morning's lock, roll and bench calls by win chance (winprob.py). Changes nothing.
+
+    For each call: the slot's two options (lock vs play today; bench vs hold), and the rest of the week as
+    Normal(m, s): your other slots minus their team, padded for model error and their unknown locks.
+    """
+    def games(p, after):
+        return [pv[p]['games'][d] for d in dates if (d > day if after else d >= day) and d in pv[p]['games']]
+
+    def slot_mv(i):
+        p = new.get(i)
+        if i in locked:
+            return score.get(p, held.get(p, 0.0)), 0.0
+        if p in score and day not in pv[p]['games']:  # a waiting score
+            return winprob.mean_var(winprob.Slot(games(p, True), winprob.ev).simulate(score[p], n=1500))
+        if i in notes and notes[i]['plan']:
+            return winprob.mean_var(winprob.Slot([g[2:] for g in notes[i]['plan']], winprob.ev).simulate(n=1500))
+        return 0.0, 0.0
+
+    mv = {i: slot_mv(i) for i in range(len(lineup.SLOTS))}
+    pad = winprob.PAD_WEEK ** 2 * len(dates) / week_days
+    out = []
+    for c in calls:
+        p, x = c['p'], c['x']
+        if c['kind'] in ('lock', 'roll') and not c.get('now'):
+            i = c['slot'] if c['kind'] == 'lock' else next((t for t, q in new.items() if q == p), c['from_slot'])
+            mk = lambda m, s: [winprob.option('lock', None, x, False, m, s), winprob.option('roll', games(p, False), x, True, m, s)]
+            pick = c['kind']
+        elif c['kind'] == 'drop' and not c.get('by') and c.get('plan_slot') in notes:
+            i = c['plan_slot']
+            plan = notes[i]['plan']
+            mk = lambda m, s, plan=plan: [winprob.option('bench', [g[2:] for g in plan], None, False, m, s),
+                                          winprob.option('hold', [g[2:] for g in plan if g[1] != day], x, False, m, s)]
+            pick = 'bench'
+        else:
+            continue
+        m = sum(v[0] for t, v in mv.items() if t != i) - matchup['them_wp']
+        s = math.sqrt(sum(v[1] for t, v in mv.items() if t != i) + matchup['them_var'] + pad)
+        opts = mk(m, s)
+        r = winprob.compare(opts, pick)
+        nxt = next((datetime.date.fromisoformat(d).strftime('%a') for d in dates if d > day and d in pv[p]['games']), None)
+        out.append(dict(r, name=nm(p), kind=c['kind'], x=x, planner=pick, m=m, s=s, opts=opts, next_game=nxt))
+    return out
 
 
 def main():
@@ -312,8 +359,18 @@ def main():
                     oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
                     state[pid] = (wg['current'], wg['locked'])
             otot, opicks = lineup.best_lineup([(pid, B[pid]['pos'], v) for pid, v in oval.items()])
+            # We assume their locks; Sleeper doesn't share them. For the win-chance check, each assumed lock with
+            # games left wasn't made with chance q: then his next game replaces the score.
+            pad, shift, q = 0.0, 0.0, float(os.environ.get('OPP_UNLOCKED') or winprob.OPP_UNLOCKED)
+            for pid in opicks.values():
+                x, lk = state[pid]
+                dates = left.get(B[pid]['team'], [])
+                if lk and dates:
+                    m, v = winprob.mean_var(lock(pid, dates).simulate(1500, current=x, roll=True))
+                    pad += q * v + q * (1 - q) * (m - x) ** 2
+                    shift += q * (m - x)
             R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot,
-                                chance=model.win_chance(tot, var(picks), otot, var(opicks)),
+                                chance=model.win_chance(tot, var(picks), otot, var(opicks)), them_var=var(opicks) + pad, them_wp=otot + shift,
                                 their_top=sorted(((B[p]['name'], oval[p]) for p in opicks.values()), key=lambda x: -x[1])[:3])
 
     play_matchup()
@@ -420,6 +477,19 @@ def main():
             bar = keeps[p]['bar'] if p in keeps else None
             R['week_plan'].append(dict(slot=lineup.SLOTS[i], held=f"{nm(p)} holds {score[p]:.1f}" + (f" (needs {bar:.0f})" if bar else '')
                                        + (f", decided {dn(nx)}" if nx else ', it counts')))
+
+    # ---------- win-chance check (shadow: reported, never acted on) ----------
+    if WIN_PROB == winprob.MODE_SHADOW and opp and notes is not None and day in dates:
+        R['winprob'] = check_win_chance(day, dates, len(weeks[week]), calls, new, locked, score, held, pv, notes,
+                                        R['matchup'], nm)
+        if not args.date and R['winprob']:
+            os.makedirs(WDIR, exist_ok=True)
+            with open(f'{WDIR}/{day}.txt', 'w') as f:
+                for c in R['winprob']:
+                    o = {x['name']: x for x in c['opts']}
+                    f.write('|'.join([c['name'], c['planner'], c['wp_pick'], f"{c['m']:.1f}", f"{c['s']:.1f}"]
+                                     + [f"{n}:{x['ev']:.2f}:{x['wp']:.4f}" for n, x in o.items()]
+                                     + [f"{c['cost']:.2f}", 'disagree' if c['disagree'] else 'agree' if c['match'] else 'no-match']) + '\n')
 
     # ---------- player cards (model view) ----------
     def card(pid):
