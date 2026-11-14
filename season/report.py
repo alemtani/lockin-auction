@@ -35,8 +35,8 @@ class Doc:
         self.h.append(f'<p{" class=m" if muted else ""}>{html or H.escape(s)}</p>')
         self.t.append(s)
 
-    def bullets(self, items):
-        self.h.append('<ul>' + ''.join(f'<li>{H.escape(i)}</li>' for i in items) + '</ul>')
+    def bullets(self, items, html=None):
+        self.h.append('<ul>' + ''.join(f'<li>{x}</li>' for x in (html or [H.escape(i) for i in items])) + '</ul>')
         self.t.extend('- ' + i for i in items)
 
     def table(self, cols, rows, colors=None):
@@ -70,37 +70,47 @@ def why_pickup(m):
     return '; '.join(bits)
 
 
+VERB = {'lock': 'LOCK', 'roll': "DON'T LOCK", 'drop': 'BENCH', 'hold': 'HOLD', 'keep': 'WAIT'}
+VERB_COLOR = {'lock': '#0a7d32', 'roll': '#1d5fbf', 'drop': '#b00020', 'hold': '#555', 'keep': '#b26a00'}
+
+
+def call_html(c, line):
+    """The call line for the HTML email: its action word in bold capitals and color, so it can't be missed."""
+    v = VERB[c['kind']]
+    return f'<b style="color:{VERB_COLOR[c["kind"]]}">{v}</b>{H.escape(line[len(v):])}'
+
+
 def call_line(c, tie):
-    """One morning call in plain words, with the numbers behind it."""
+    """One morning call in plain words, with the numbers behind it. It starts with the action word in capitals."""
     n, x, bar = c['name'], c['x'], c.get('bar')
     close = f" Close call ({abs(x - bar):.1f} apart, within {tie:.1f})." if c.get('close') else ''
     nxt = f"{c['next_game']}, his next game" if c.get('next_game') else None
     if c['kind'] == 'lock':
         moved = f", moved from {c['from_slot']}" if c['from_slot'] != c['slot'] else ''
         if c.get('now'):
-            return (f"Lock {n} ({x:.1f}) at {c['slot']} now{moved}. He needs {bar:.0f}, so it is safe by {x - bar:.0f}. "
+            return (f"LOCK {n} ({x:.1f}) at {c['slot']} now{moved}. He needs {bar:.0f}, so it is safe by {x - bar:.0f}. "
                     f"Waiting for his next game{' (' + c['next_game'] + ')' if c.get('next_game') else ''} gains nothing, "
                     "and a missed morning would let that game replace it.")
         why = ' You are the favorite, so play it safe.' if c.get('close') else ''
-        return f"Lock {n} ({x:.1f}) at {c['slot']}{moved}. He needed {bar:.1f}.{close}{why}"
+        return f"LOCK {n} ({x:.1f}) at {c['slot']}{moved}. He needed {bar:.1f}.{close}{why}"
     if c['kind'] == 'roll':
         why = ' You are the underdog, so take the chance.' if c.get('close') else ''
-        return f"Don't lock {n} ({x:.1f}). He plays today, and that game replaces it. Locking needed {bar:.1f}.{close}{why}"
+        return f"DON'T LOCK {n} ({x:.1f}). He plays today, and that game replaces it. Locking needed {bar:.1f}.{close}{why}"
     if c['kind'] == 'keep':
         if not nxt:
-            return f"{n} holds {x:.1f} at {c['slot']}. He has no games left, so it counts."
-        return (f"{n} holds {x:.1f} at {c['slot']} and needs {bar:.0f}. No game today, so it waits. "
+            return f"WAIT: {n} holds {x:.1f} at {c['slot']}. He has no games left, so it counts."
+        return (f"WAIT: {n} holds {x:.1f} at {c['slot']} and needs {bar:.0f}. No game today, so it waits. "
                 f"Lock it on {nxt}, unless the bar moves.")
     plan = ''
     if c.get('plan_slot'):
         plan = (f" Fresh, {c['plan_slot']} is worth {c['plan_worth']:.0f} from these tries: {', '.join(c['plan_tries'])}.")
     if c['kind'] == 'hold':
-        return (f"{n} holds {x:.1f} at {c['slot']} for today only. He needs {bar:.0f}, but nobody else plays {c['slot']} today, "
+        return (f"HOLD: {n} holds {x:.1f} at {c['slot']} for today only. He needs {bar:.0f}, but nobody else plays {c['slot']} today, "
                 f"so keeping him costs nothing. Expect to bench him {('on ' + nxt) if nxt else 'later'}.{plan}")
     if c.get('by'):
-        return f"Bench {n}: his {x:.1f} is below his bar, and {c['by']} locks in his slot ({c['from_slot']}). Benching drops it."
+        return f"BENCH {n}: his {x:.1f} is below his bar, and {c['by']} locks in his slot ({c['from_slot']}). Benching drops it."
     need = f", and he needs {bar:.0f}" if bar is not None else ''
-    return f"Bench {n}: his {x:.1f} is below the bar{need}. A player who plays today needs his slot. Benching drops it.{plan}"
+    return f"BENCH {n}: his {x:.1f} is below the bar{need}. A player who plays today needs his slot. Benching drops it.{plan}"
 
 
 def render(R):
@@ -130,7 +140,8 @@ def render(R):
     order = {'lock': 0, 'roll': 1, 'drop': 2, 'hold': 3, 'keep': 4}
     cs = sorted(R.get('calls') or [], key=lambda c: (order[c['kind']], -c['x']))
     if cs:
-        D.bullets([call_line(c, R['tie']) for c in cs])
+        lines = [call_line(c, R['tie']) for c in cs]
+        D.bullets(lines, [call_html(c, l) for c, l in zip(cs, lines)])
     else:
         D.para('None. No player has an open score.')
     D.para("A score can wait until the player's next game. The call comes the morning he plays again: lock it, "

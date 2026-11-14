@@ -302,3 +302,32 @@ class Planner(unittest.TestCase):
         gs = [dict(date='mon', fp=30.0)]
         st = model.week_state(gs, lambda d: True, lambda d, fp: False, alive=lambda d: False)
         self.assertIsNone(st['current'])
+
+
+class Spread(unittest.TestCase):
+    """Win chance needs each player's spread from where his week stands, not from a fresh week."""
+
+    def test_locked_score_has_no_spread(self):
+        L = model.LockIn(30, 12, 0.95, 3)
+        self.assertEqual(set(L.simulate(200, current=55.0, locked=True)), {55.0})
+
+    def test_high_open_score_is_kept(self):
+        L = model.LockIn(30, 12, 0.95, 2)
+        self.assertEqual(set(L.simulate(200, current=60.0)), {60.0})
+
+    def test_low_open_score_rolls(self):
+        L = model.LockIn(30, 12, 0.95, 2)
+        xs = L.simulate(2000, current=5.0)
+        self.assertGreater(len(set(xs)), 100)
+        self.assertIn(5.0, xs)  # he sits every game left: the old score stays
+
+
+class Report(unittest.TestCase):
+    def test_call_starts_with_bold_capital_verb(self):
+        import report
+        c = dict(kind='drop', name='Kevin Durant', x=32.5, bar=34.0, slot=None, from_slot='PF')
+        line = report.call_line(c, 1.5)
+        self.assertTrue(line.startswith('BENCH Kevin Durant'))
+        self.assertTrue(report.call_html(c, line).startswith('<b style="color:#b00020">BENCH</b> Kevin Durant'))
+        c = dict(kind='lock', name='LaMelo Ball', x=39.2, bar=35.1, slot='UTIL', from_slot='UTIL')
+        self.assertTrue(report.call_line(c, 1.5).startswith('LOCK LaMelo Ball'))

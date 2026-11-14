@@ -172,11 +172,21 @@ class LockIn:
             v = a * self.eu[j - 1] + (1 - a) * v
         return v
 
-    def simulate(self, n=3000, seed=1):
-        """Final scores under the lock policy (for spread / win chance)."""
+    def simulate(self, n=3000, seed=1, current=None, locked=False):
+        """Final scores under the lock policy (for spread / win chance).
+
+        current: his score so far this week (None if no game yet). locked: that score is locked.
+        A locked score never moves. An unlocked one is kept if it beats playing on, else his games replace it.
+        """
+        if locked:
+            return [current if current is not None else 0.0] * n
         rng, out = random.Random(seed), []
+        keep = current is not None and self.after_game(current, self.games) <= current + 1e-9
         for _ in range(n):
-            x = None
+            x = current
+            if keep:
+                out.append(x)
+                continue
             for g in range(self.games):
                 left = self.games - g - 1
                 if rng.random() < self.avail[g]:

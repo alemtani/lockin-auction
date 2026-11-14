@@ -281,11 +281,15 @@ def main():
     def lineup_rows(ids, val):
         return [(pid, B[pid]['pos'], val(pid)) for pid in ids if pid not in reserve and pid in B]
 
+    state = {}  # pid -> (current score, locked) this week, for both teams
+
     def spread(pid):
+        """Variance of his final weekly score, from where his week stands now. A locked score has none."""
         dates = left.get(B[pid]['team'], [])
-        if not dates:
+        current, locked = state.get(pid, (None, False))
+        if not dates or locked:
             return 0.0
-        xs = lock(pid, dates).simulate(1500)
+        xs = lock(pid, dates).simulate(1500, current=current)
         m = sum(xs) / len(xs)
         return sum((x - m) ** 2 for x in xs) / len(xs)
 
@@ -293,6 +297,9 @@ def main():
     var = lambda ps: sum(spread(p) for p in ps.values())
 
     def play_matchup():
+        for pid in my_ids:
+            wg = week_games.get(pid) or {}
+            state[pid] = (wg.get('current'), wg.get('locked', False))
         tot, picks = lineup.best_lineup(lineup_rows(my_ids, value_now))
         if opp:
             # Their games so far count too. We can't see their past lineups or locks: use today's starters
@@ -303,6 +310,7 @@ def main():
                 if pid in B and pid not in (opp.get('reserve') or []):
                     wg = model.week_state(this_week_games(pid), lambda d, pid=pid: pid in o_start, locked_on(pid, mine=False))
                     oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
+                    state[pid] = (wg['current'], wg['locked'])
             otot, opicks = lineup.best_lineup([(pid, B[pid]['pos'], v) for pid, v in oval.items()])
             R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot,
                                 chance=model.win_chance(tot, var(picks), otot, var(opicks)),
