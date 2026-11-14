@@ -348,7 +348,7 @@ class WinProb(unittest.TestCase):
         # Today's Durant case: hold 32.5 (one game left, avg 33) vs bench for Collins (avg 20) then Durant.
         # Expected points prefer benching, but with a lead and little swing left, win chance holds.
         import winprob
-        m, s = -3.0, 15.0
+        m, s = -3.0, 15.0  # roughly today with OPP_UNLOCKED near 0
         opts = [winprob.option('bench', [(20.2, 0.95, 14.8), (32.9, 0.95, 10.5)], None, False, m, s),
                 winprob.option('hold', [(32.9, 0.95, 10.5)], 32.5, False, m, s)]
         r = winprob.compare(opts, 'bench')

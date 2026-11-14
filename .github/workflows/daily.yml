@@ -39,7 +39,7 @@ jobs:
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           # Win-chance check. Repository variables (Settings > Secrets and variables > Actions > Variables).
-          # Unset = defaults: WIN_PROB=shadow (report only), OPP_UNLOCKED=0.1. WIN_PROB=off removes the check.
+          # Unset = defaults: WIN_PROB=shadow (report only), OPP_UNLOCKED=0.05. WIN_PROB=off removes the check.
           WIN_PROB: ${{ vars.WIN_PROB }}
           OPP_UNLOCKED: ${{ vars.OPP_UNLOCKED }}
       - name: Save the model history

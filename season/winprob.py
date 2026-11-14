@@ -20,7 +20,7 @@ MODE_OFF, MODE_SHADOW = 'off', 'shadow'
 GAIN_MIN = 0.01   # win chance must rise by at least 1 point to disagree with the planner
 COST_MAX = 2.0    # and give up at most this many expected points
 PAD_WEEK = 20.0   # points: model error over a full week of games, scaled by the share of game days left
-OPP_UNLOCKED = 0.1  # chance an opponent's assumed lock wasn't made (Sleeper doesn't share locks); then his next game
+OPP_UNLOCKED = 0.05 # chance an opponent's assumed lock wasn't made (Sleeper doesn't share locks); then his next game
                     # replaces the score. Moves their expected total and adds swing.
 
 
