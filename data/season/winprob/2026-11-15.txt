@@ -1,0 +1,3 @@
+Austin Reaves|lock|lock|-12.3|13.1|lock:39.50:0.9809|roll:39.12:0.9689|0.00|agree
+Domantas Sabonis|lock|lock|-10.6|13.1|lock:37.75:0.9809|roll:33.14:0.8699|0.00|agree
+Kevin Durant|lock|lock|-5.3|13.1|lock:32.50:0.9809|roll:33.12:0.9529|0.62|no-match
