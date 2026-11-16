@@ -1,7 +1,8 @@
 name: lock record
 # Record a lock you made against the email's call (or a call you skipped). Run it from the GitHub app:
 # Actions > lock record > Run workflow. It adds a line to data/season/locks.txt and commits it.
-# Every record resends today's email with the change.
+# Every record resends today's email with the change (once today's email has gone out).
+# Docs: README.md, "GitHub actions".
 # team: opponent records a lock the email guessed wrong for your opponent (data/season/opp_locks.txt).
 on:
   workflow_dispatch:
@@ -45,10 +46,20 @@ jobs:
           PLAYER: ${{ inputs.player }}
           CALL: ${{ inputs.call }}
           DATE: ${{ inputs.date }}
-      - name: Send today's email again  # always: a record changes the scores, the matchup and the calls
-        run: python3 season/daily.py --send
+      # A record changes the scores, the matchup and the calls, so today's email is resent with it.
+      # Only once today's email has gone out: before that (after midnight, before the 3am run) the line
+      # is saved and the morning email uses it. Resending first would make the daily run skip as "already sent".
+      - name: Send today's email again
+        run: |
+          if [ -f "data/season/out/$(TZ=America/Los_Angeles date +%F).txt" ]; then
+            python3 season/daily.py --send
+          else
+            echo "Today's email hasn't gone out yet; the morning email will use this record." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          WIN_PROB: ${{ vars.WIN_PROB }}  # same settings as the daily email
+          OPP_UNLOCKED: ${{ vars.OPP_UNLOCKED }}
       - name: Save
         run: |
           git config user.name 'lockin-bot'

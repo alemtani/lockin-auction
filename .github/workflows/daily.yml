@@ -1,4 +1,5 @@
 name: daily email
+# The morning email. Docs: README.md, "GitHub actions".
 on:
   schedule:
     # cron-job.org starts the run at 3:00am PT. This is the backup.
