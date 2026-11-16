@@ -216,6 +216,33 @@ def week_state(games, started, locked_on, alive=None):
                 current_date=last['date'] if last else None)
 
 
+def recorded_lock(records, date):
+    """What a lock record says about one game. records: {game date: True (locked) / False (rode it)}.
+
+    A lock is final, so a record on date D also says no earlier game was locked.
+    Returns True/False for a game the record covers, None for a later game (no record: assume).
+    """
+    if not records:
+        return None
+    if date in records:
+        return records[date]
+    return False if date < max(records) else None
+
+
+def held_options(games, records=None):
+    """Scores a player may hold now when you can't see his locks: any game he could have locked, or his latest.
+
+    games: his games so far, oldest first, each {'date', 'fp'}. records: as in recorded_lock().
+    """
+    if not games:
+        return []
+    for g in games:
+        if records and records.get(g['date']):
+            return [g['fp']]
+    cut = max(records) if records else ''
+    return sorted({g['fp'] for g in games if g['date'] > cut} | {games[-1]['fp']})
+
+
 def game_avail(a, injury, projected, sits, first=True, a_season=None):
     """Chance he plays one game this week.
 

@@ -1,10 +1,12 @@
 """Add a line to data/season/locks.txt: your own lock record, for a call you did not follow.
+With --team opponent, add it to data/season/opp_locks.txt instead: a lock the email guessed wrong for your opponent.
 
   python3 season/add_lock.py --player durant --call lock
   python3 season/add_lock.py --player "lamelo" --call roll --date 2026-11-10
   python3 season/add_lock.py --player durant --call lock --dry-run   print the line, change nothing
+  python3 season/add_lock.py --team opponent --player giannis --call roll --date 2026-11-13
 
-player: any part of the name of a player on your roster (not case sensitive). It must match one player.
+player: any part of the name of a player on your roster (or this week's opponent's roster) (not case sensitive). It must match one player.
 date: the game's date. Blank = his latest game in data/season/games.csv (the score he holds now).
 A line for the same player and date replaces the old one. The GitHub action "lock record" runs this.
 """
@@ -21,6 +23,7 @@ def main():
     ap.add_argument('--player', required=True)
     ap.add_argument('--call', required=True, choices=['lock', 'roll'])
     ap.add_argument('--date', default='')
+    ap.add_argument('--team', default='mine', choices=['mine', 'opponent'])
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
 
@@ -30,11 +33,20 @@ def main():
     L = fetch.league_data(week)
     players = fetch.players()
     mine = next(r for r in L['rosters'] if r['owner_id'] == fetch.ME)
-    names = {pid: (players.get(pid) or {}).get('full_name') or pid for pid in mine['players'] or []}
+    team, path, whose = mine, daily.LOCKS, 'your'
+    if a.team == 'opponent':
+        mt = {m['roster_id']: m for m in L['matchups']}
+        mid = (mt.get(mine['roster_id']) or {}).get('matchup_id')
+        oid = next((m['roster_id'] for m in L['matchups'] if m['matchup_id'] == mid and m['roster_id'] != mine['roster_id']), None)
+        team = next((r for r in L['rosters'] if r['roster_id'] == oid), None)
+        if team is None:
+            sys.exit('No opponent this week.')
+        path, whose = daily.OPP_LOCKS, "your opponent's"
+    names = {pid: (players.get(pid) or {}).get('full_name') or pid for pid in team['players'] or []}
     q = a.player.strip().lower()
     hits = [pid for pid, n in names.items() if q in n.lower()]
     if len(hits) != 1:
-        sys.exit(f"'{a.player}' matches {len(hits)} of your players" + (f": {', '.join(names[p] for p in hits)}" if hits else '')
+        sys.exit(f"'{a.player}' matches {len(hits)} of {whose} players" + (f": {', '.join(names[p] for p in hits)}" if hits else '')
                  + '. Use more of the name.')
     pid, name = hits[0], names[hits[0]]
 
@@ -54,12 +66,12 @@ def main():
     print(line)
     if a.dry_run:
         return
-    old = open(daily.LOCKS).read().splitlines() if os.path.exists(daily.LOCKS) else []
+    old = open(path).read().splitlines() if os.path.exists(path) else []
     keep = [l for l in old if l.split('#')[0].strip().lower().split('|')[:2] != [date, name.lower()]]
-    open(daily.LOCKS, 'w').write('\n'.join(keep + [line]) + '\n')
+    open(path, 'w').write('\n'.join(keep + [line]) + '\n')
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
-        open(summary, 'a').write(f'Recorded: **{name}**, game of {date}: **{a.call}**.\n')
+        open(summary, 'a').write(f'Recorded ({whose} team): **{name}**, game of {date}: **{a.call}**.\n')
 
 
 if __name__ == '__main__':

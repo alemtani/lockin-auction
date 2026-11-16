@@ -137,6 +137,40 @@ def winprob_lines(checks):
     return out, audit
 
 
+def opp_locks(D, R, m):
+    """The opponent's assumed locks, so you can check them against the Sleeper app."""
+    D.head('Their locks (assumed)')
+    lo, hi = m['banked']
+    D.para(f"From games already played they hold {m['banked_guess']:.0f} if they made the locks below. "
+           f"Depending on their real locks: {lo:.0f} to {hi:.0f}.")
+    ol = R.get('opp_locks') or []
+    if not ol:
+        D.para('No lock assumed: each player holds his latest game.')
+        return
+    rows, flags = [], []
+    for x in ol:
+        since = ', '.join(f"{f:.1f} {d(dt)}" for dt, f in x['later'])
+        best = max((f for _, f in x['later']), default=None)
+        if x['recorded']:
+            note = 'your record'
+        elif best is not None and best > x['x']:
+            note = 'check: riding paid'
+            flags.append(x['name'])
+        elif x['later']:
+            note = ''
+        else:
+            note = (f"{x['left']} game" + ("s" if x['left'] > 1 else "") + " left") if x['left'] else "final"
+        rows.append([x['name'] + ('' if x['starts'] else ' (bench)'), f"{x['x']:.1f}", d(x['date']), since or '—', note])
+    D.table(['Player', 'Locked', 'Game', 'Since then', 'Note'], rows)
+    if flags:
+        D.para(f"Check in Sleeper: {', '.join(flags)}. If a lock wasn't made, record it.",
+               f"<b>Check in Sleeper:</b> {H.escape(', '.join(flags))}. If a lock wasn't made, record it.")
+    D.para("Sleeper's public data doesn't show locks, so these are the email's guess. Their lineup assumes any of "
+           "their games could have counted. If the app shows a lock wasn't made (or a different game was locked): "
+           "GitHub app > Actions > lock record > team: opponent, call: roll (or lock), with the game date. "
+           "It matters most when a later game beat the locked score.", muted=True)
+
+
 def render(R):
     D = Doc()
     wk = R['week_dates']
@@ -231,6 +265,7 @@ def render(R):
                "can still expect, else roll to the next one.", muted=True)
     if m:
         D.para(f"Their best: " + ', '.join(f"{n} {v:.0f}" for n, v in m['their_top']) + '.', muted=True)
+        opp_locks(D, R, m)
 
     if 'waivers' in R:
         D.head('Waiver pickups')

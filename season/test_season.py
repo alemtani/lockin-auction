@@ -304,6 +304,44 @@ class Planner(unittest.TestCase):
         self.assertIsNone(st['current'])
 
 
+class OpponentLocks(unittest.TestCase):
+    """Sleeper doesn't share the opponent's locks: the email guesses them, and your record corrects a guess."""
+    G = [dict(date='2026-11-10', fp=43.75), dict(date='2026-11-13', fp=54.5), dict(date='2026-11-14', fp=72.5)]
+
+    def test_roll_record_undoes_the_guessed_lock(self):
+        guess = lambda d, fp: fp > 50  # the email would assume he locked 54.5
+        self.assertEqual(model.week_state(self.G, lambda d: True, guess)['current'], 54.5)
+        rec = {'2026-11-13': False}
+        lk = lambda d, fp: model.recorded_lock(rec, d) if model.recorded_lock(rec, d) is not None else guess(d, fp)
+        st = model.week_state(self.G, lambda d: True, lk)
+        self.assertEqual((st['current'], st['locked']), (72.5, True))  # later game: back to the guess
+
+    def test_a_record_covers_earlier_games(self):
+        rec = {'2026-11-13': True}
+        self.assertIs(model.recorded_lock(rec, '2026-11-10'), False)  # a lock is final: nothing earlier was locked
+        self.assertIs(model.recorded_lock(rec, '2026-11-13'), True)
+        self.assertIsNone(model.recorded_lock(rec, '2026-11-14'))
+        self.assertIsNone(model.recorded_lock({}, '2026-11-14'))
+
+    def test_held_options(self):
+        self.assertEqual(model.held_options(self.G), [43.75, 54.5, 72.5])
+        self.assertEqual(model.held_options(self.G, {'2026-11-10': False}), [54.5, 72.5])
+        self.assertEqual(model.held_options(self.G, {'2026-11-13': True}), [54.5])
+        self.assertEqual(model.held_options(self.G, {'2026-11-14': False}), [72.5])  # rode the last game: he holds it
+        self.assertEqual(model.held_options([]), [])
+
+    def test_report_flags_a_ride_that_paid(self):
+        import report
+        R = dict(opp_locks=[dict(name='Giannis Antetokounmpo', x=54.5, date='2026-11-13', later=[('2026-11-14', 72.5)],
+                                 recorded=False, starts=True, left=0)])
+        D = report.Doc()
+        report.opp_locks(D, R, dict(banked=(263.0, 430.0), banked_guess=387.0))
+        txt = D.out()[1]
+        self.assertIn('check: riding paid', txt)
+        self.assertIn('Check in Sleeper: Giannis Antetokounmpo', txt)
+        self.assertIn('387', txt)
+
+
 class Spread(unittest.TestCase):
     """Win chance needs each player's spread from where his week stands, not from a fresh week."""
 

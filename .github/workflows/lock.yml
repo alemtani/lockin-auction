@@ -1,15 +1,22 @@
 name: lock record
 # Record a lock you made against the email's call (or a call you skipped). Run it from the GitHub app:
 # Actions > lock record > Run workflow. It adds a line to data/season/locks.txt and commits it.
+# team: opponent records a lock the email guessed wrong for your opponent (data/season/opp_locks.txt).
 on:
   workflow_dispatch:
     inputs:
+      team:
+        description: Whose player (opponent = fix a lock the email guessed for them)
+        required: true
+        type: choice
+        options: [mine, opponent]
+        default: mine
       player:
         description: Player (any part of the name, e.g. durant)
         required: true
         type: string
       call:
-        description: What you did
+        description: What was done (roll = the game was not locked)
         required: true
         type: choice
         options: [lock, roll]
@@ -35,8 +42,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Add the line
-        run: python3 season/add_lock.py --player "$PLAYER" --call "$CALL" --date "$DATE"
+        run: python3 season/add_lock.py --team "$TEAM" --player "$PLAYER" --call "$CALL" --date "$DATE"
         env:
+          TEAM: ${{ inputs.team }}
           PLAYER: ${{ inputs.player }}
           CALL: ${{ inputs.call }}
           DATE: ${{ inputs.date }}
@@ -50,9 +58,10 @@ jobs:
           git config user.name 'lockin-bot'
           git config user.email 'lockin-bot@users.noreply.github.com'
           git add data/season
-          git diff --cached --quiet || git commit -m "Lock record: $PLAYER $CALL"
+          git diff --cached --quiet || git commit -m "Lock record ($TEAM): $PLAYER $CALL"
           git pull --rebase -q
           git push
         env:
+          TEAM: ${{ inputs.team }}
           PLAYER: ${{ inputs.player }}
           CALL: ${{ inputs.call }}

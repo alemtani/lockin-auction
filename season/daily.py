@@ -17,6 +17,7 @@ import fetch, lineup, model, planner, report, winprob
 
 OUT = 'data/season'
 LOCKS = f'{OUT}/locks.txt'
+OPP_LOCKS = f'{OUT}/opp_locks.txt'  # the opponent's real locks, from the Sleeper app, where they differ from the email's guess
 WDIR = f'{OUT}/winprob'      # the win-chance check, one file per morning
 LDIR = f'{OUT}/planner_locks'  # the planner's lock calls, one file per morning: pid|slot|score|game date
 PLAN_START = '2026-11-09'      # the first morning the planner made the calls; earlier games use calls/<game date>.txt
@@ -277,6 +278,19 @@ def main():
                 override[parts[0], by_name[parts[1].lower()]] = parts[2].lower() == 'lock'
             elif parts != ['']:
                 print(f'locks.txt: skipped line: {l}', file=sys.stderr)
+    # The opponent's locks: Sleeper's app shows them, the public data doesn't. The email guesses them (the old
+    # per-player calls) and lists the guesses; opp_locks.txt corrects one, usually a lock he didn't make.
+    opp_rec = defaultdict(dict)  # pid -> {game date: locked?}
+    if opp and os.path.exists(OPP_LOCKS):
+        opp_names = {B[pid]['name'].lower(): pid for pid in opp['players'] or [] if pid in B}
+        for l in open(OPP_LOCKS).read().splitlines():
+            parts = [x.strip() for x in l.split('#')[0].split('|')]
+            if len(parts) == 3 and parts[0] not in weeks[week]:
+                continue  # another week's record
+            if len(parts) == 3 and parts[1].lower() in opp_names and parts[2].lower() in ('lock', 'roll'):
+                opp_rec[opp_names[parts[1].lower()]][parts[0]] = parts[2].lower() == 'lock'
+            elif parts != ['']:
+                print(f'opp_locks.txt: skipped line: {l}', file=sys.stderr)
     auto = set()  # (pid, game date) the planner locked on an earlier morning
     if os.path.isdir(LDIR):
         for fn in sorted(os.listdir(LDIR)):
@@ -303,6 +317,8 @@ def main():
         def f(date, fp):
             if mine and (date, pid) in override:
                 return override[date, pid]
+            if not mine and model.recorded_lock(opp_rec.get(pid), date) is not None:
+                return model.recorded_lock(opp_rec[pid], date)
             if mine and (pid, date) in auto:
                 return True
             if mine and date >= PLAN_START:
@@ -349,27 +365,40 @@ def main():
             state[pid] = (wg.get('current'), wg.get('locked', False))
         tot, picks = lineup.best_lineup(lineup_rows(my_ids, value_now))
         if opp:
-            # Their games so far count too. We can't see their past lineups or locks: use today's starters
-            # and assume they lock like the old per-player calls.
-            o_start = set(opp.get('starters') or [])
-            oval = {}
+            # Their games so far count too. We can't see their past lineups or locks. Lineup: assume every game
+            # could have counted (they swap players in to try them), so their best lineup from the whole roster.
+            # Locks: opp_locks.txt where you recorded one, else assume they lock like the old per-player calls.
+            oval, owg = {}, {}
             for pid in opp['players'] or []:
                 if pid in B and pid not in (opp.get('reserve') or []):
-                    wg = model.week_state(this_week_games(pid), lambda d, pid=pid: pid in o_start, locked_on(pid, mine=False))
+                    wg = owg[pid] = model.week_state(this_week_games(pid), lambda d: True, locked_on(pid, mine=False))
                     oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
                     state[pid] = (wg['current'], wg['locked'])
             otot, opicks = lineup.best_lineup([(pid, B[pid]['pos'], v) for pid, v in oval.items()])
+            # What they hold now from games already played: the guess, and the range over every lock they could have made.
+            hold = {pid: model.held_options(wg['games'], opp_rec.get(pid)) for pid, wg in owg.items()}
+            banked = [lineup.best_lineup([(pid, B[pid]['pos'], f(h)) for pid, h in hold.items() if h])[0] for f in (min, max)]
+            guess = lineup.best_lineup([(pid, B[pid]['pos'], wg['current']) for pid, wg in owg.items() if wg['current'] is not None])[0]
+            R['opp_locks'] = []
+            for pid, wg in sorted(owg.items(), key=lambda kv: -(kv[1]['current'] or 0)):
+                if not wg['locked']:
+                    continue
+                later = [(g['date'], g['fp']) for g in wg['games'] if g['date'] > wg['locked_date']]
+                R['opp_locks'].append(dict(name=B[pid]['name'], x=wg['current'], date=wg['locked_date'], later=later,
+                                           recorded=wg['locked_date'] in opp_rec.get(pid, {}), starts=pid in opicks.values(),
+                                           left=len(left.get(B[pid]['team'], []))))
             # We assume their locks; Sleeper doesn't share them. For the win-chance check, each assumed lock with
             # games left wasn't made with chance q: then his next game replaces the score.
             pad, shift, q = 0.0, 0.0, float(os.environ.get('OPP_UNLOCKED') or winprob.OPP_UNLOCKED)
             for pid in opicks.values():
                 x, lk = state[pid]
                 dates = left.get(B[pid]['team'], [])
-                if lk and dates:
+                if lk and dates and not opp_rec.get(pid, {}).get(owg[pid]['locked_date']):
                     m, v = winprob.mean_var(lock(pid, dates).simulate(1500, current=x, roll=True))
                     pad += q * v + q * (1 - q) * (m - x) ** 2
                     shift += q * (m - x)
             R['matchup'] = dict(opp=users.get(opp['owner_id'], 'opponent'), me=tot, them=otot,
+                                banked=banked, banked_guess=guess,
                                 chance=model.win_chance(tot, var(picks), otot, var(opicks)), them_var=var(opicks) + pad, them_wp=otot + shift,
                                 their_top=sorted(((B[p]['name'], oval[p]) for p in opicks.values()), key=lambda x: -x[1])[:3])
 
