@@ -8,7 +8,7 @@ With --team opponent, add it to data/season/opp_locks.txt instead: a lock the em
 
 player: any part of the name of a player on your roster (or this week's opponent's roster) (not case sensitive). It must match one player.
 date: the game's date. Blank = his latest game in data/season/games.csv (the score he holds now).
-A line for the same player and date replaces the old one. The GitHub action "lock record" runs this.
+A line for the same player and date replaces the old one. The GitHub action "lock record" runs this, then resends the email.
 """
 import argparse, csv, os, sys
 

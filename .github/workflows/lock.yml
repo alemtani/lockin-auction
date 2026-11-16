@@ -1,6 +1,7 @@
 name: lock record
 # Record a lock you made against the email's call (or a call you skipped). Run it from the GitHub app:
 # Actions > lock record > Run workflow. It adds a line to data/season/locks.txt and commits it.
+# Every record resends today's email with the change.
 # team: opponent records a lock the email guessed wrong for your opponent (data/season/opp_locks.txt).
 on:
   workflow_dispatch:
@@ -25,10 +26,6 @@ on:
         required: false
         type: string
         default: ''
-      resend_email:
-        description: Send today's email again with this change
-        type: boolean
-        default: false
 permissions:
   contents: write
 concurrency:
@@ -48,8 +45,7 @@ jobs:
           PLAYER: ${{ inputs.player }}
           CALL: ${{ inputs.call }}
           DATE: ${{ inputs.date }}
-      - name: Send today's email again
-        if: inputs.resend_email
+      - name: Send today's email again  # always: a record changes the scores, the matchup and the calls
         run: python3 season/daily.py --send
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

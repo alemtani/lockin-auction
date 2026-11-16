@@ -1,6 +1,6 @@
 # Your opponent's locks, where the email guessed wrong. Sleeper's app shows their locks; its public data doesn't.
 # The email lists its guesses under "Their locks (assumed)". Add a line only when the app disagrees.
-# From your phone: GitHub app > Actions > lock record > team: opponent > Run workflow. It adds the line for you.
+# From your phone: GitHub app > Actions > lock record > team: opponent > Run workflow. It adds the line and resends today's email.
 # One line per game: date of the game | player name as in the email | lock or roll (roll = that game was not locked)
 # Example:
 # 2026-11-13|Giannis Antetokounmpo|roll
