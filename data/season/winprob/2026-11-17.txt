@@ -1,0 +1,5 @@
+Damian Lillard|roll|roll|-21.3|50.2|lock:4.75:0.3710|roll:37.23:0.6217|-0.11|agree
+LaMelo Ball|roll|roll|-13.7|51.2|lock:-3.00:0.3721|roll:37.66:0.6750|-0.01|agree
+Jamal Murray|bench|hold|-21.3|50.2|bench:48.15:0.6959|hold:48.16:0.6960|-0.04|no-match
+Jarrett Allen|bench|bench|-13.7|51.2|bench:40.74:0.6969|hold:38.50:0.6818|0.00|agree
+De'Anthony Melton|bench|bench|-12.4|51.3|bench:39.28:0.6961|hold:36.90:0.6798|0.04|agree
