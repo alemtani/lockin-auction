@@ -171,6 +171,21 @@ class Lineups(unittest.TestCase):
         self.assertNotIn('x', picks.values())
         self.assertEqual(tot, 40 + 39 + 20 + 25 + 26 + 30 + 35 + 34 + 22)
 
+    def test_locked_player_keeps_his_slot(self):
+        # A lock keeps its slot: a locked 30.5 starts even when two others are expected to beat it.
+        ps = [(f'p{i}', ['PG', 'SG', 'SF', 'PF', 'C'], 40) for i in range(9)] + [('lk', ['SF'], 30.5)]
+        tot, picks = lineup.best_lineup(ps)
+        self.assertNotIn('lk', picks.values())
+        tot, picks = lineup.best_lineup(ps, pinned=['lk'])
+        self.assertIn('lk', picks.values())
+        self.assertEqual(len(picks), 9)
+        self.assertEqual(tot, 8 * 40 + 30.5)  # real values, no pin bonus
+        # More pins than fit: as many as fit start.
+        cs = [(f'c{i}', ['C'], 20) for i in range(4)] + [(f'p{i}', ['PG', 'SG', 'SF', 'PF'], 40) for i in range(8)]
+        tot, picks = lineup.best_lineup(cs, pinned=['c0', 'c1', 'c2', 'c3'])
+        self.assertEqual(sum(p.startswith('c') for p in picks.values()), 3)  # C and two UTIL
+        self.assertEqual(tot, 3 * 20 + 6 * 40)
+
     def test_position_need(self):
         # Two centers: dropping the only C-eligible starter costs more than his points.
         base = [('c', ['C'], 20)] + [(f'p{i}', ['PG', 'SG', 'SF', 'PF'], 30) for i in range(8)] + [('b', ['PG'], 25)]

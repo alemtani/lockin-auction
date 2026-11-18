@@ -11,14 +11,21 @@ def fits(pos, slot):
     return ok is None or bool(ok & set(pos))
 
 
-def best_lineup(players):
+PIN = 1e6  # outweighs any lineup of real scores, so pinned players start whenever they fit
+
+
+def best_lineup(players, pinned=()):
     """players: list of (pid, positions, value). Exact best legal 9.
 
+    pinned: pids that must start, as a locked score does (a lock keeps its slot). If they can't all fit,
+    as many as fit start. The total counts real values only.
     Returns (total of starters, {slot index: pid}).
     """
+    pinned = set(pinned)
     full = (1 << len(SLOTS)) - 1
-    dp = {0: (0.0, ())}  # filled slots mask -> (total, ((slot, pid), ...))
+    dp = {0: (0.0, ())}  # filled slots mask -> (total incl. pin bonus, ((slot, pid), ...))
     for pid, pos, val in players:
+        val += PIN if pid in pinned else 0
         nxt = dict(dp)
         for mask, (tot, picks) in dp.items():
             for i, s in enumerate(SLOTS):
@@ -28,8 +35,9 @@ def best_lineup(players):
                 if m2 not in nxt or nxt[m2][0] < t2:
                     nxt[m2] = (t2, picks + ((i, pid),))
         dp = nxt
-    tot, picks = max(dp.values(), key=lambda x: x[0]) if full not in dp else dp[full]
-    return tot, dict(picks)
+    _, picks = max(dp.values(), key=lambda x: x[0]) if full not in dp else dp[full]
+    value = {pid: v for pid, _, v in players}
+    return sum(value[p] for _, p in picks), dict(picks)
 
 
 def team_value(players):

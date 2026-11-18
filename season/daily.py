@@ -363,7 +363,8 @@ def main():
         for pid in my_ids:
             wg = week_games.get(pid) or {}
             state[pid] = (wg.get('current'), wg.get('locked', False))
-        tot, picks = lineup.best_lineup(lineup_rows(my_ids, value_now))
+        # A lock keeps its slot, on both sides: locked players start, the rest fill around them.
+        tot, picks = lineup.best_lineup(lineup_rows(my_ids, value_now), pinned=[p for p in my_ids if state[p][1]])
         if opp:
             # Their games so far count too. We can't see their past lineups or locks. Lineup: assume every game
             # could have counted (they swap players in to try them), so their best lineup from the whole roster.
@@ -374,11 +375,13 @@ def main():
                     wg = owg[pid] = model.week_state(this_week_games(pid), lambda d: True, locked_on(pid, mine=False))
                     oval[pid] = e_week(pid, current=wg['current'], locked=wg['locked'])
                     state[pid] = (wg['current'], wg['locked'])
-            otot, opicks = lineup.best_lineup([(pid, B[pid]['pos'], v) for pid, v in oval.items()])
+            olocked = [pid for pid, wg in owg.items() if wg['locked']]
+            otot, opicks = lineup.best_lineup([(pid, B[pid]['pos'], v) for pid, v in oval.items()], pinned=olocked)
             # What they hold now from games already played: the guess, and the range over every lock they could have made.
             hold = {pid: model.held_options(wg['games'], opp_rec.get(pid)) for pid, wg in owg.items()}
             banked = [lineup.best_lineup([(pid, B[pid]['pos'], f(h)) for pid, h in hold.items() if h])[0] for f in (min, max)]
-            guess = lineup.best_lineup([(pid, B[pid]['pos'], wg['current']) for pid, wg in owg.items() if wg['current'] is not None])[0]
+            guess = lineup.best_lineup([(pid, B[pid]['pos'], wg['current']) for pid, wg in owg.items() if wg['current'] is not None],
+                                       pinned=olocked)[0]
             R['opp_locks'] = []
             for pid, wg in sorted(owg.items(), key=lambda kv: -(kv[1]['current'] or 0)):
                 if not wg['locked']:
