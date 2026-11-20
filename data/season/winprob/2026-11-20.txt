@@ -1,0 +1,6 @@
+Anthony Davis|roll|roll|-41.0|31.1|lock:41.75:0.5098|roll:44.27:0.5396|-0.40|agree
+Jamal Murray|roll|roll|-35.6|32.4|lock:35.50:0.4991|roll:44.72:0.6015|-0.32|agree
+John Collins|lock|lock|-30.8|35.3|lock:34.00:0.5366|roll:24.91:0.4397|0.00|agree
+Kevin Durant|lock|lock|-30.5|35.3|lock:33.75:0.5366|roll:31.33:0.5089|0.00|agree
+LaMelo Ball|bench|bench|-42.5|31.4|bench:45.61:0.5385|hold:39.88:0.4725|-0.23|agree
+De'Anthony Melton|bench|bench|-32.3|32.7|bench:35.47:0.5371|hold:30.23:0.4773|-0.20|agree
