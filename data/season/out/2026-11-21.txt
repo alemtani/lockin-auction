@@ -1,0 +1,101 @@
+Lock-In Sat 11/21: lock calls + lineup
+
+Week 5 vs SlickVik03: you 338, them 405 (expected). Win chance 0%.
+
+LAST NIGHT (FRI 11/20)
+Player              Score  Avg exp  Minutes  Call        
+Anthony Davis       48.8   39       34       LOCK at C   
+Domantas Sabonis    32.0   32       38       LOCK at UTIL
+Kevin Durant        22.8   32       35       LOCKED      
+Michael Porter Jr.  20.8   28       34       LOCKED      
+Jamal Murray        20.5   38       36       DROP        
+Coby White          13.0   19       26       DROP        
+John Collins        3.8    18       20       LOCKED      
+Jarrett Allen       14.8   27       31       bench       
+
+LOCK CALLS THIS MORNING
+- LOCK Anthony Davis (48.8) at C now. He needs 36, so it is safe by 13. Waiting for his next game (Sun) gains nothing, and a missed morning would let that game replace it.
+- LOCK Damian Lillard (38.5) at SG. He needed 27.0.
+- LOCK Darius Garland (36.0) at PG, moved from UTIL. He needed 27.4.
+- LOCK Domantas Sabonis (32.0) at UTIL. He needed 29.6.
+- BENCH Jamal Murray: his 20.5 is below the bar, and he needs 39. A player who plays today needs his slot. Benching drops it. Fresh, UTIL is worth 39 from these tries: Sat Ball, Sun Murray.
+- BENCH Coby White: his 13.0 is below the bar, and he needs 36. A player who plays today needs his slot. Benching drops it.
+A score can wait until the player's next game. The call comes the morning he plays again: lock it, or today's game replaces it. A waiting score locks now when it beats its bar by 10 or more. 'Needs' = what your other slots give up without him, so the bar depends on your whole roster, not just his own games. A lock goes in the most restrictive slot he fits. A waiting player stays in his slot, and a score below its bar is benched only when someone who plays today needs the slot. Sleeper doesn't share your locks, so this email assumes you followed every call. If you didn't, add a line to data/season/locks.txt.
+
+WIN CHANCE CHECK (SHADOW: NOT ACTED ON)
+Win chance agrees with every call today.
+Damian Lillard: lock 0.5%, roll 0.4%. Rest of the week: -103, swing ±25. Darius Garland: lock 0.5%, roll 0.5%. Rest of the week: -101, swing ±25. Domantas Sabonis: lock 0.5%, roll 0.9%. Rest of the week: -97, swing ±25. Jamal Murray: bench 0.5%, hold 0.4%. Rest of the week: -104, swing ±18.
+The calls above pick the most expected points. This check scores the same choices by your chance to win the week, from where the rest of your lineup and theirs stand (a lead, plus the swing still to come, padded for what the model can't see and for their locks, which Sleeper doesn't share). It speaks up only when win chance rises by 1 point or more for at most 2 expected points. Early in the week the swing is large and it nearly always agrees. Follow the calls above; this is a trial.
+
+TODAY'S LINEUP
+Slot  Player              Today                   Lock if >=  If below                           Note          
+PG    Darius Garland      locked 36.0 (lock now)                                                               
+SG    Damian Lillard      locked 38.5 (lock now)                                                               
+G     Kyrie Irving        plays today (free try)  31          roll into his next game (Sun)                    
+SF    Michael Porter Jr.  locked 39.2                                                                          
+PF    Kevin Durant        locked 33.8                                                                          
+F     John Collins        locked 34.0                                                                          
+C     Anthony Davis       locked 48.8 (lock now)                                                               
+UTIL  Domantas Sabonis    locked 32.0 (lock now)                                                               
+UTIL  LaMelo Ball         plays today (free try)  31 (at G)   bench him, try Jamal Murray (Sun)                
+BN    Jamal Murray        drops his 20.5                                                                       
+IR    Lauri Markkanen     IR                                                                     Out, plays 10%
+BN    Jarrett Allen       0 games left                                                                         
+BN    De'Anthony Melton   1 game left                                                                          
+BN    Coby White          drops his 13.0                                                                       
+BN    Austin Reaves       0 games left                                                           Out           
+Change in Sleeper: PG: Darius Garland (now Jamal Murray); G: Kyrie Irving (now Coby White); UTIL: LaMelo Ball (now Darius Garland).
+'Free try' = the slot holds no score, so any score helps and you can still replace it. 'Lock if >=' = the score he needs, judged the morning of his next game. 'If below' = what the slot does then. 'plays' = his chance to play each game left. Status can change during the week: an Out player can be back later, and Sleeper's return date is in these numbers. The email re-checks every player each morning.
+
+WEEK PLAN (RE-PLANNED EVERY MORNING)
+- G (worth 38): Sat Irving, Sun Irving
+- UTIL (worth 39): Sat Ball, Sun Murray
+Who tries each open slot, by day. Each player has one home slot, so his games count once. 'Worth' = what the slot can expect from these tries: lock a try that beats what the later tries can still expect, else roll to the next one.
+Their best: James Harden 79, Julius Randle 52, Desmond Bane 48.
+
+THEIR LOCKS (ASSUMED)
+From games already played they hold 405 if they made the locks below. Depending on their real locks: 409 to 409.
+Player                   Locked  Game       Since then                      Note       
+James Harden             79.0    Fri 11/20  —                               your record
+Julius Randle            52.0    Mon 11/16  24.5 Wed 11/18, 41.2 Fri 11/20  your record
+Desmond Bane             48.0    Mon 11/16  21.2 Wed 11/18, 34.8 Fri 11/20  your record
+Josh Giddey              42.5    Wed 11/18  7.2 Fri 11/20                   your record
+Stephon Castle           42.5    Thu 11/19  —                               your record
+Cameron Boozer           40.2    Mon 11/16  44.8 Wed 11/18, 33.8 Thu 11/19  your record
+Paul George              35.5    Mon 11/16  10.8 Wed 11/18                  your record
+Ja'Kobe Walter           34.5    Tue 11/17  31.0 Wed 11/18, 4.8 Fri 11/20   your record
+Brandon Miller           30.5    Tue 11/17  20.2 Fri 11/20                  your record
+Brayden Burries (bench)  30.2    Wed 11/18  15.0 Thu 11/19                             
+Sleeper's public data doesn't show locks, so these are the email's guess. Their lineup assumes any of their games could have counted. If the app shows a lock wasn't made (or a different game was locked): GitHub app > Actions > lock record > team: opponent, call: roll (or lock), with the game date. It matters most when a later game beat the locked score.
+
+WAIVER PICKUPS
+No move. No rising free agent beats your roster by enough. The closest:
+1. Add Terrence Shannon Jr. (PF/SF/SG MIN), drop Jarrett Allen: +0.6 per week (not enough).
+averaging 18 in 13 games vs projected 15 (+3), last 3: 32 → we now expect 18 (trust in real games 76%); 1 games left this week, 4 next; on waivers: a claim uses your priority
+2. Add De'Andre Hunter (PF/SF SAC), drop Jarrett Allen: +0.5 per week (not enough).
+averaging 18 in 13 games vs projected 15 (+3), last 3: 32 → we now expect 18 (trust in real games 77%); minutes up: 25 → 35. Check if a teammate is out; the boost may end when he returns; 1 games left this week, 3 next
+3. Add Julian Champagnie (PF/SF/SG SAS), drop Jarrett Allen: +0.3 per week (not enough).
+averaging 16 in 16 games vs projected 15 (+1), last 3: 14 → we now expect 16 (trust in real games 80%); 1 games left this week, 4 next; on waivers: a claim uses your priority
+Only rising players are listed: beating their projection, or minutes up. Gain = how much more your open slots expect this week with him instead, plus half of next week, from the same slot plan as the lock calls. Your 13th and 14th players count, because they get tries. A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+OUTLOOK CHANGES THIS WEEK
+- LaMelo Ball: 28.4 → 26.1 per game
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Last 3  Games  Now   Trust real  50/50 at
+Anthony Davis       38.2       38.2      41.7    15     38.7  67%         7       
+Jamal Murray        36.5       39.3      31.1    14     38.0  53%         11      
+Austin Reaves       37.4       34.7      43.1    12     35.7  50%         11      
+Kyrie Irving        35.0       32.3      32.2    12     33.7  74%         4       
+Kevin Durant        35.8       30.4      27.7    17     32.0  57%         11      
+Domantas Sabonis    37.0       30.3      26.9    14     31.7  66%         7       
+Darius Garland      31.7       27.1      35.3    14     29.4  53%         11      
+Lauri Markkanen     34.0       23.8      31.2    8      29.3  40%         11      
+Damian Lillard      32.3       27.6      24.1    15     29.0  77%         4       
+Michael Porter Jr.  31.2       26.2      20.6    14     28.4  53%         11      
+Jarrett Allen       29.0       25.2      23.0    14     27.1  58%         9       
+LaMelo Ball         32.6       21.4      8.3     16     26.1  56%         11      
+Coby White          28.5       11.3      21.5    8      19.1  40%         11      
+John Collins        24.2       14.7      19.1    15     18.3  55%         11      
+De'Anthony Melton   17.4       13.7      3.8     16     14.8  56%         11      
+'Real avg' counts every game, locked or not, so a run of duds pulls 'Now' down. 'Last 3' shows the recent trend. 'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.

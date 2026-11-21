@@ -4,3 +4,15 @@
 # One line per game: date of the game | player name as in the email | lock or roll (roll = that game was not locked)
 # Example:
 # 2026-11-13|Giannis Antetokounmpo|roll
+2026-11-16|Paul George|lock
+2026-11-20|James Harden|lock
+2026-11-16|Julius Randle|lock
+2026-11-16|Desmond Bane|lock
+2026-11-18|Josh Giddey|lock
+2026-11-19|Stephon Castle|lock
+2026-11-16|Cameron Boozer|lock
+2026-11-17|Ja'Kobe Walter|lock
+2026-11-17|Brandon Miller|lock
+2026-11-20|Dyson Daniels|roll
+2026-11-20|Trey Murphy III|roll
+2026-11-17|Dylan Harper|roll

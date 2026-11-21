@@ -1,0 +1,4 @@
+Damian Lillard|lock|lock|-103.2|24.8|lock:38.50:0.0045|roll:28.93:0.0042|0.00|agree
+Darius Garland|lock|roll|-100.7|24.8|lock:36.00:0.0045|roll:29.18:0.0054|6.93|agree
+Domantas Sabonis|lock|roll|-96.7|24.8|lock:32.00:0.0045|roll:28.77:0.0087|3.35|agree
+Jamal Murray|bench|bench|-104.3|18.0|bench:39.46:0.0046|hold:37.56:0.0044|0.87|agree
