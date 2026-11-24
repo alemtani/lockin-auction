@@ -1,0 +1,4 @@
+Jarrett Allen|bench|bench|-2.8|50.2|bench:44.86:0.7903|hold:40.31:0.7637|-0.10|agree
+Coby White|bench|hold|5.9|50.8|bench:36.37:0.7907|hold:36.37:0.7907|0.08|no-match
+LaMelo Ball|bench|hold|5.9|50.8|bench:36.37:0.7907|hold:36.37:0.7907|0.08|no-match
+Michael Porter Jr.|bench|bench|7.3|50.9|bench:35.16:0.7924|hold:34.21:0.7869|0.02|agree
