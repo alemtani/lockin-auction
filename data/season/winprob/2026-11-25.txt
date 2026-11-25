@@ -1,0 +1,7 @@
+Domantas Sabonis|lock|lock|29.0|53.4|lock:42.50:0.9095|roll:36.61:0.8837|0.00|agree
+Darius Garland|lock|lock|32.0|53.4|lock:39.50:0.9095|roll:36.19:0.8941|0.00|agree
+Damian Lillard|roll|roll|34.6|52.1|lock:28.75:0.8877|roll:36.89:0.9094|0.01|agree
+Jarrett Allen|roll|roll|33.5|51.9|lock:23.00:0.8620|roll:30.16:0.8848|-0.20|agree
+Jamal Murray|bench|hold|25.9|50.3|bench:45.31:0.9090|hold:45.36:0.9094|-0.27|no-match
+John Collins|bench|bench|37.1|52.2|bench:34.20:0.9088|hold:31.22:0.8988|0.02|agree
+Kyrie Irving|bench|bench|33.5|51.9|bench:37.89:0.9095|hold:35.99:0.9029|0.36|agree
