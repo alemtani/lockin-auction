@@ -1,0 +1,83 @@
+Lock-In Fri 11/27: lock calls + lineup
+
+Week 6 vs Fresh Prince of the Bay: you 372, them 314 (expected). Win chance 87%.
+
+LAST NIGHT (THU 11/26)
+None of your players played.
+
+LOCK CALLS THIS MORNING
+- LOCK Damian Lillard (45.2) at SG. He needed 35.0.
+- DON'T LOCK LaMelo Ball (26.8). He plays today, and that game replaces it. Locking needed 34.9.
+- DON'T LOCK Michael Porter Jr. (15.2). He plays today, and that game replaces it. Locking needed 30.7.
+- BENCH Coby White: his 21.2 is below the bar, and he needs 36. A player who plays today needs his slot. Benching drops it. Fresh, UTIL is worth 36 from these tries: Fri Reaves, Sat White, Sun Reaves.
+- BENCH Jarrett Allen: his 20.0 is below the bar, and he needs 35. A player who plays today needs his slot. Benching drops it.
+A score can wait until the player's next game. The call comes the morning he plays again: lock it, or today's game replaces it. A waiting score locks now when it beats its bar by 10 or more. 'Needs' = what your other slots give up without him, so the bar depends on your whole roster, not just his own games. A lock goes in the most restrictive slot he fits. A waiting player stays in his slot, and a score below its bar is benched only when someone who plays today needs the slot. Sleeper doesn't share your locks, so this email assumes you followed every call. If you didn't, add a line to data/season/locks.txt.
+
+WIN CHANCE CHECK (SHADOW: NOT ACTED ON)
+Win chance agrees with every call today.
+Damian Lillard: lock 90.4%, roll 86.4%. Rest of the week: +25, swing ±54. LaMelo Ball: lock 88.1%, roll 88.9%. Rest of the week: +34, swing ±51. Michael Porter Jr.: lock 85.0%, roll 89.8%. Rest of the week: +39, swing ±52. Coby White: bench 90.4%, hold 88.7%. Rest of the week: +34, swing ±51.
+The calls above pick the most expected points. This check scores the same choices by your chance to win the week, from where the rest of your lineup and theirs stand (a lead, plus the swing still to come, padded for what the model can't see and for their locks, which Sleeper doesn't share). It speaks up only when win chance rises by 1 point or more for at most 2 expected points. Early in the week the swing is large and it nearly always agrees. Follow the calls above; this is a trial.
+
+TODAY'S LINEUP
+Slot  Player              Today                            Lock if >=  If below                            Note             
+PG    Darius Garland      locked 39.5                                                                                       
+SG    Damian Lillard      locked 45.2 (lock now)                                                                            
+G     Jamal Murray        plays today (free try)           36          roll into his next game (Sun)                        
+SF    Kevin Durant        locked 52.0                                                                                       
+PF    Anthony Davis       locked 54.2                                                                                       
+F     Michael Porter Jr.  plays today (replaces his 15.2)  27          roll into his next game (Sat)                        
+C     Domantas Sabonis    locked 42.5                                                                                       
+UTIL  Kyrie Irving        plays today (free try)           27 (at G)   bench him, try Grayson Allen (Sat)                   
+UTIL  Austin Reaves       plays today (free try)           27 (at G)   bench him, try Coby White (Sat)     DTD, plays 65/70%
+IR    Lauri Markkanen     IR                                                                               Out, plays 10/10%
+BN    Jarrett Allen       drops his 20.0                                                                                    
+BN    John Collins        plays today                                                                                       
+BN    Grayson Allen       1 game left                                                                      DTD, plays 65%   
+BN    Coby White          drops his 21.2                                                                                    
+BN    LaMelo Ball         drops his 26.8                                                                   DTD, plays 65/95%
+Change in Sleeper: G: Jamal Murray (now Coby White); UTIL: Kyrie Irving (now Jarrett Allen); UTIL: Austin Reaves (now LaMelo Ball).
+'Free try' = the slot holds no score, so any score helps and you can still replace it. 'Lock if >=' = the score he needs, judged the morning of his next game. 'If below' = what the slot does then. 'plays' = his chance to play each game left. Status can change during the week: an Out player can be back later, and Sleeper's return date is in these numbers. The email re-checks every player each morning.
+
+WEEK PLAN (RE-PLANNED EVERY MORNING)
+- G (worth 46): Fri Murray, Sun Murray
+- F (worth 31): Fri Jr., Sat Jr., Sun Collins
+- UTIL (worth 36): Fri Irving, Sat Allen, Sun Ball
+- UTIL (worth 36): Fri Reaves, Sat White, Sun Reaves
+Who tries each open slot, by day. Each player has one home slot, so his games count once. 'Worth' = what the slot can expect from these tries: lock a try that beats what the later tries can still expect, else roll to the next one.
+Their best: Nikola Jokić 55, LeBron James 54, Ayo Dosunmu 36.
+
+THEIR LOCKS (ASSUMED)
+From games already played they hold 223 if they made the locks below. Depending on their real locks: 176 to 246.
+Player        Locked  Game       Since then      Note        
+LeBron James  54.2    Wed 11/25  —               2 games left
+Ayo Dosunmu   36.0    Mon 11/23  17.8 Wed 11/25              
+Sleeper's public data doesn't show locks, so these are the email's guess. Their lineup assumes any of their games could have counted. If the app shows a lock wasn't made (or a different game was locked): GitHub app > Actions > lock record > team: opponent, call: roll (or lock), with the game date. It matters most when a later game beat the locked score.
+
+WAIVER PICKUPS
+No move. No rising free agent beats your roster by enough. The closest:
+1. Add Quenton Jackson (PG/SG IND), drop Grayson Allen: -0.4 per week (worse).
+averaging 15 in 18 games vs projected 11 (+4), last 3: 5 → we now expect 14 (trust in real games 83%); minutes up: 17 → 21. Check if a teammate is out; the boost may end when he returns; 2 games left this week, 2 next
+2. Add Ace Bailey (PF/SF UTA), drop Grayson Allen: -0.5 per week (worse).
+averaging 19 in 19 games vs projected 18 (+0), last 3: 17 → we now expect 19 (trust in real games 60%); 2 games left this week, 2 next
+3. Add Tristan da Silva (PF/SF ORL), drop Grayson Allen: -0.5 per week (worse).
+averaging 18 in 15 games vs projected 14 (+4), last 3: 17 → we now expect 17 (trust in real games 79%); 2 games left this week, 1 next
+Only rising players are listed: beating their projection, or minutes up. Gain = how much more your open slots expect this week with him instead, plus half of next week, from the same slot plan as the lock calls. Your 13th and 14th players count, because they get tries. A move needs +4 for a free agent, +8 if it costs waiver priority (twice the Monday bar, so you don't churn mid-week).
+
+YOUR PLAYERS: PROJECTION VS REAL GAMES
+Player              Projected  Real avg  Last 3  Games  Now   Trust real  50/50 at
+Jamal Murray        36.5       41.0      42.0    16     39.5  56%         11      
+Anthony Davis       38.2       39.1      46.8    17     39.4  69%         7       
+Austin Reaves       37.4       34.7      43.1    12     35.7  50%         11      
+Domantas Sabonis    37.0       32.3      41.5    17     33.3  69%         7       
+Kevin Durant        35.8       31.3      33.9    19     32.6  60%         11      
+Kyrie Irving        35.0       30.4      23.0    15     31.9  77%         4       
+Damian Lillard      32.3       28.1      30.1    18     29.5  80%         4       
+Lauri Markkanen     34.0       23.8      31.2    8      29.3  40%         11      
+Darius Garland      31.7       26.7      24.8    17     28.7  57%         11      
+Michael Porter Jr.  31.2       24.5      15.6    16     27.2  56%         11      
+Jarrett Allen       29.0       24.8      19.2    16     26.9  60%         9       
+LaMelo Ball         32.6       21.5      22.3    19     26.0  60%         11      
+Grayson Allen       20.0       20.9      27.1    13     20.5  51%         11      
+Coby White          28.5       13.3      18.6    10     20.0  45%         11      
+John Collins        24.2       15.9      17.9    17     18.8  57%         11      
+'Real avg' counts every game, locked or not, so a run of duds pulls 'Now' down. 'Last 3' shows the recent trend. 'Trust real' = how much real games count vs the projection. '50/50 at' = games until they count the same. Steady veterans take ~10 games; uncertain players switch faster.

@@ -1,0 +1,4 @@
+Damian Lillard|lock|lock|24.8|53.7|lock:45.25:0.9037|roll:35.76:0.8638|0.00|agree
+LaMelo Ball|roll|roll|33.7|51.2|lock:26.75:0.8811|roll:30.76:0.8895|0.58|agree
+Michael Porter Jr.|roll|roll|39.1|52.4|lock:15.25:0.8501|roll:29.21:0.8976|-0.21|agree
+Coby White|bench|bench|33.7|51.2|bench:36.20:0.9036|hold:31.44:0.8874|0.18|agree
