@@ -1,0 +1,2 @@
+Michael Porter Jr.|roll|roll|62.3|35.8|lock:16.00:0.9856|roll:23.05:0.9875|0.12|agree
+Austin Reaves|bench|bench|55.3|33.8|bench:32.96:0.9903|hold:32.36:0.9898|0.94|agree
